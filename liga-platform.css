@@ -75,3 +75,18 @@ body:not(.eduliga-home) .module-back-link{display:none}
 .point-history-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px;background:var(--paper);border-radius:12px;border:1px solid var(--line)}
 .point-history-list li div{display:grid;gap:5px}.point-history-list small{color:var(--muted);font-size:12px}.point-history-list strong{white-space:nowrap;color:var(--league-color,#70b08b)}
 @media(max-width:650px){.point-history-dialog{padding:20px 14px}.point-history-dialog h2{font-size:21px}.point-history-leagues button{flex:1;font-size:12px}.point-history-list li{padding:11px}.point-history-list small{font-size:11px}}
+
+/* Shared card grid keeps icons, copy and arrows aligned in every league. */
+.module-choice{display:grid;grid-template-columns:68px minmax(0,1fr);grid-template-rows:1fr auto;align-items:start;gap:18px;min-height:190px}
+.module-choice .module-choice-icon{grid-column:1;grid-row:1;width:68px;height:68px}
+.module-choice .module-choice-copy{grid-column:2;grid-row:1;align-self:start}
+.module-choice .module-choice-arrow{grid-column:2;grid-row:2;justify-self:end;margin:0;align-self:end}
+.roster-person .roster-name-line{display:flex;align-items:baseline;justify-content:space-between;gap:7px;width:100%;min-width:0;overflow:visible;white-space:normal}
+.roster-name-line b{min-width:0;flex:1}
+.roster-total-xp{flex:none;white-space:nowrap;color:var(--ink);font:900 11px Nunito}
+.roster-person .roster-point-breakdown{display:flex;flex-wrap:wrap;gap:4px 8px;width:100%;overflow:visible;white-space:normal}
+.roster-league-points{white-space:nowrap}
+.roster-league-points.ortho{color:var(--green)}
+.roster-league-points.english{color:#8d74ca}
+.roster-league-points.spanish{color:#2489c7}
+@media(max-width:650px){.module-choice{grid-template-columns:48px minmax(0,1fr);min-height:145px;gap:12px}.module-choice .module-choice-icon{width:48px;height:48px;font-size:30px}.module-choice .module-choice-copy b{font-size:21px}.eduliga-home .sidebar-user-list .roster-person{min-width:180px}.users-dialog .roster-total-xp{font-size:13px}}

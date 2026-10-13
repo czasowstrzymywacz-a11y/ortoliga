@@ -90,3 +90,9 @@ body:not(.eduliga-home) .module-back-link{display:none}
 .roster-league-points.english{color:#8d74ca}
 .roster-league-points.spanish{color:#2489c7}
 @media(max-width:650px){.module-choice{grid-template-columns:48px minmax(0,1fr);min-height:145px;gap:12px}.module-choice .module-choice-icon{width:48px;height:48px;font-size:30px}.module-choice .module-choice-copy b{font-size:21px}.eduliga-home .sidebar-user-list .roster-person{min-width:180px}.users-dialog .roster-total-xp{font-size:13px}}
+
+.league-flag{display:inline-block;width:24px;height:16px;vertical-align:middle;object-fit:contain;flex:none}
+.module-choice-icon .league-flag{width:48px;height:32px}
+.english-mascot .league-flag{width:90px;height:60px}
+.league-logo .league-flag{width:72px;height:48px}
+@media(max-width:650px){.module-choice-icon .league-flag{width:36px;height:24px}.league-logo .league-flag{width:48px;height:32px}.sidebar-navigation .league-switcher .league-flag{width:24px;height:16px}}

@@ -12,3 +12,4 @@
 - Publikuj również `eduliga-ui.js`, `eduliga-logo.svg` i `ortoliga-redirect.html`. W starym klonie po skopiowaniu plików zastąp `index.html` szablonem `ortoliga-redirect.html`, podmieniając `__EDULIGA_VERSION__` na numer z `version.json`. Nie zwiększaj ponownie numeru wydania dla przekierowania.
 
 
+- Od 0.56 publikuj również pliki flag: eduliga-flag-en.svg i eduliga-flag-es.svg.

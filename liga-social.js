@@ -68,3 +68,54 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){restart();void poll();if(typeof loadStudentRoster==='function')void loadStudentRoster();}});
   restart();
 })();
+
+/* Point award history, scoped to the selected league and authenticated profiles. */
+(() => {
+ let dialog,selectedId='',selectedName='',selectedLeague='',request=0;
+ const A=()=>window.LeagueApp;
+ const esc=value=>A().esc(value);
+ function makeDialog(){
+  if(dialog)return;
+  dialog=document.createElement('dialog');dialog.id='point-history-dialog';dialog.className='point-history-dialog';
+  dialog.setAttribute('aria-labelledby','point-history-title');
+  dialog.innerHTML='<form method="dialog"><button class="point-history-close" aria-label="Zamknij historię">×</button></form><h2 id="point-history-title"></h2><p>Ostatnie 30 zdarzeń zdobycia punktów</p><div class="point-history-leagues"></div><div class="point-history-content" aria-live="polite"></div>';
+  document.body.append(dialog);
+  dialog.addEventListener('close',()=>{request++;});
+ }
+ function localRows(key){
+  if(key==='english')return (data.englishLeague?.scoreEvents||[]).map(e=>({points:e.delta,kind:e.kind||'answer',occurred_at:e.at}));
+  const events=(data[key==='ortho'?'orthoBattle':'spanishLeague']?.events||[]).map(e=>({points:e.delta,kind:e.kind,occurred_at:e.at}));
+  if(key==='ortho')events.push(...(data.sessions||[]).map(s=>({points:Math.max(0,Math.min(100,Math.round(Number(s.score)||0))),kind:'dictation',occurred_at:s.createdAt,earned_date:s.date})));
+  return events;
+ }
+ function timeLabel(row){
+  if(row.occurred_at){const d=new Date(row.occurred_at);if(!Number.isNaN(d.getTime()))return d.toLocaleString('pl-PL',{dateStyle:'medium',timeStyle:'medium'});}
+  if(row.earned_date && /^\d{4}-\d{2}-\d{2}$/.test(row.earned_date))return row.earned_date.split('-').reverse().join('.')+' · godzina niezapisana';
+  return 'Starszy zapis · data i godzina niezapisane';
+ }
+ async function load(key){
+  selectedLeague=key;const n=++request,viewer=A().user()?.id;
+  const cfg=A().configs[key],root=dialog.querySelector('.point-history-content');
+  document.getElementById('point-history-title').textContent='✨ '+selectedName+' · '+cfg.name;
+  dialog.querySelector('.point-history-leagues').innerHTML=Object.entries(A().configs).map(([k,c])=>'<button type="button" data-history-league="'+k+'" aria-pressed="'+(k===key)+'">'+c.logo+' '+esc(c.name)+'</button>').join('');
+  dialog.querySelectorAll('[data-history-league]').forEach(b=>b.onclick=()=>load(b.dataset.historyLeague));
+  root.innerHTML='<p>Wczytuję historię…</p>';
+  try{
+   if(!viewer)throw new Error('auth');
+   const {data:rows,error}=await window.ortoligaSyncClient.rpc('get_league_point_history',{p_user_id:selectedId,p_league:key});
+   if(n!==request||A().user()?.id!==viewer)return;
+   if(error)throw error;
+   const history=selectedId===viewer?localRows(key):rows||[];
+   const entries=history.filter(r=>Number(r.points)>0).sort((a,b)=>String(b.occurred_at||b.earned_date||'').localeCompare(String(a.occurred_at||a.earned_date||''))).slice(0,30);
+   const labels={answer:'Trening',battle:'Bitwa',flash:'Fiszka',sentence:'Układanie zdań',dictation:'Dyktando'};
+   root.innerHTML=entries.length?'<ol class="point-history-list">'+entries.map(r=>'<li><div><b>'+esc(labels[r.kind]||'Nauka')+'</b><small>'+esc(timeLabel(r))+'</small></div><strong>+'+Number(r.points).toLocaleString('pl-PL')+' '+cfg.unit+'</strong></li>').join('')+'</ol>':'<p>Brak zapisanych zdarzeń zdobycia punktów w tej lidze. Starsze punkty bez rejestru pozostają w rankingu.</p>';
+  }catch{if(n===request)root.innerHTML='<p>Nie udało się pobrać historii.</p><button type="button" class="secondary">Spróbuj ponownie</button>';const retry=root.querySelector('button');if(retry)retry.onclick=()=>load(selectedLeague);}
+ }
+ window.openUserPointHistory=(id,name)=>{
+  if(!A()?.user()){openSyncDialog();return;}
+  makeDialog();selectedId=id;selectedName=name;
+  if(!dialog.open)dialog.showModal();
+  void load(A().configs[document.body.dataset.activeLeague]?document.body.dataset.activeLeague:'ortho');
+ };
+ window.addEventListener('ortoliga-auth-change',()=>{request++;if(dialog?.open)dialog.close();});
+})();

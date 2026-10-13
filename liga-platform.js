@@ -1,6 +1,6 @@
 /* League boundaries and account-owned progress. Legacy Orto/English data stays intact. */
 (() => {
- const configs={ortho:{name:'OrtoLiga',unit:'oXP',logo:'🦉'},english:{name:'Liga Angielska',unit:'aXP',logo:'<img class="league-flag" src="eduliga-flag-en.svg" alt="Flaga Wielkiej Brytanii">'},spanish:{name:'Liga Hiszpańska',unit:'hXP',logo:'<img class="league-flag" src="eduliga-flag-es.svg" alt="Flaga Hiszpanii">'}};
+ const configs={ortho:{name:'OrtoLiga',unit:'oXP',logo:'<img class="league-flag" src="eduliga-flag-pl.svg" alt="Flaga Polski">'},english:{name:'Liga Angielska',unit:'aXP',logo:'<img class="league-flag" src="eduliga-flag-en.svg" alt="Flaga Wielkiej Brytanii">'},spanish:{name:'Liga Hiszpańska',unit:'hXP',logo:'<img class="league-flag" src="eduliga-flag-es.svg" alt="Flaga Hiszpanii">'}};
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const user=()=>typeof syncUser!=='undefined'?syncUser:null;
  const blank=()=>({events:[],words:{},awards:[]});

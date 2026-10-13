@@ -13,3 +13,4 @@
 
 
 - Od 0.56 publikuj również pliki flag: eduliga-flag-en.svg i eduliga-flag-es.svg.
+- Od 0.57 publikuj także eduliga-flag-pl.svg.

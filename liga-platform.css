@@ -97,3 +97,7 @@ body:not(.eduliga-home) .module-back-link{display:none}
 .league-logo .league-flag{width:72px;height:48px}
 @media(max-width:650px){.module-choice-icon .league-flag{width:36px;height:24px}.league-logo .league-flag{width:48px;height:32px}.sidebar-navigation .league-switcher .league-flag{width:24px;height:16px}}
 .hero-art .league-flag{width:90px;height:60px}
+
+button.eduliga-brand-icon{border:0;padding:0;flex:none;cursor:pointer}
+button.eduliga-brand-icon:hover{filter:brightness(1.1);transform:translateY(-1px)}
+button.eduliga-brand-icon:focus-visible{outline:2px solid var(--green);outline-offset:4px}

@@ -55,3 +55,8 @@ body:not(.eduliga-home) .top-right{display:none!important}.league-switcher[hidde
  .league-sidebar .nav>button:first-child{flex:0 0 42px;min-width:42px}.league-sidebar .nav>button:first-child>span{font-size:25px}.eduliga-home .league-sidebar .sidebar-users{display:none}.eduliga-home .league-sidebar{padding-top:68px}.eduliga-home .top-right{display:flex!important;flex-wrap:wrap;justify-content:flex-start}.eduliga-home .topbar{align-items:flex-start;gap:10px}.eduliga-welcome-logo{width:76px;height:76px}.eduliga-picker-brand{gap:12px}.eduliga-picker-brand img{width:58px;height:58px}.eduliga-picker-brand strong{font-size:32px}.eduliga-home .users-mobile-button{display:none}
 }
 body:not(.eduliga-home) .module-back-link{display:none}
+
+/* Shared top alignment and desktop home label. */
+.app > main{margin:0 auto;align-self:start}
+.league-home .home-brand-label,.league-sidebar .nav button .home-brand-label{display:inline;width:auto;flex:none;font-size:15px;font-weight:900;line-height:1.2}
+@media(max-width:650px){.league-home .home-brand-label,.league-sidebar .nav button .home-brand-label{display:none!important}}

@@ -7,6 +7,8 @@
 - Nie zwiększaj wersji przy samej analizie, zmianach roboczych ani ponowieniu nieudanego wysłania tego samego wydania. Przy świadomym ustawieniu numeru użyj parametru `-Version`.
 - Do repozytorium publikacyjnego przenieś razem `index.html`, `ortoliga-core.js`, `ortoliga.js`, `ortoliga.css`, `version.json`, `Update-Version.ps1`, `URUCHOMIENIE-SYNC.md`, `supabase/config.toml`, `supabase/functions` i `supabase/migrations` oraz ten plik. Zmiany funkcji Edge wdrażaj do projektu Supabase zgodnie z dokumentacją. Jeśli istnieje `.publish-stage`, to obecny klon służący do publikacji.
 - Użytkownik upoważnił do publikowania gotowych aktualizacji w istniejącym repozytorium GitHub Pages.
-- Nazwę aplikacji zmień wyłącznie po zatwierdzeniu konkretnej nazwy przez użytkownika. Propozycje nazw i usprawnień nie stanowią zgody na ich wdrożenie.
+- Użytkownik zatwierdził nazwę aplikacji EduLiga. OrtoLiga pozostaje nazwą ligi ortograficznej.
+- Od 0.52 główna publikacja jest w repozytorium `czasowstrzymywacz-a11y/eduliga`, klon `.eduliga-stage`. `.publish-stage` obsługuje stary adres `/ortoliga/` i publikuje przekierowanie do `/eduliga/`. Zawsze najpierw opublikuj i potwierdź nowy adres, potem stary.
+- Publikuj również `eduliga-ui.js`, `eduliga-logo.svg` i `ortoliga-redirect.html`. W starym klonie po skopiowaniu plików zastąp `index.html` szablonem `ortoliga-redirect.html`, podmieniając `__EDULIGA_VERSION__` na numer z `version.json`. Nie zwiększaj ponownie numeru wydania dla przekierowania.
 
 

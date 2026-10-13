@@ -66,3 +66,7 @@ Wdróż migrację `supabase/migrations/202610130003_three_leagues.sql` przed pub
 ## Profile, menu i rozsypanki (0.51)
 
 Wdróż migrację `supabase/migrations/202610130004_missing_profiles.sql`. Uzupełnia brakujące profile nazwanych kont i automatycznie tworzy je przy założeniu konta lub uzupełnieniu pseudonimu. Zachowuje istniejące profile i wyniki; kont anonimowych nie publikuje. Do publikacji dołącz `liga-zdania.js`: rozsypanki hiszpańskie mają minimum 3 wyrazy, nagrodę +10 hXP i karę −5 hXP. Na telefonie wspólny czat jest stale umieszczony na dole, a rankingi mają oddzielne kafelki kategorii.
+
+## EduLiga i dwa adresy (0.52)
+
+Główna aplikacja: https://czasowstrzymywacz-a11y.github.io/eduliga/. Repozytorium `czasowstrzymywacz-a11y/eduliga` i klon `.eduliga-stage` zachowują historię wcześniejszego projektu. Stary adres `/ortoliga/` ma osobny klon `.publish-stage` i przekierowuje do `/eduliga/`. Najpierw opublikuj pełną aplikację w nowym repozytorium, potem w starym repozytorium zastąp `index.html` szablonem `ortoliga-redirect.html`, zamieniając `__EDULIGA_VERSION__` na aktualny numer. Przekierowanie zachowuje parametry i fragment adresu, w tym powroty z potwierdzenia konta i odzyskiwania hasła. Oba adresy są w tej samej domenie, więc dotychczasowe klucze pamięci kont/gościa i sesji Supabase nie zmieniają się. W Supabase Auth URL Configuration nowy Site URL to `/eduliga/`; lista dozwolonych URL zawiera zarówno `/eduliga/`, jak i wcześniejsze adresy. W obu repozytoriach publikuj też logo `eduliga-logo.svg`, `eduliga-ui.js` i szablon przekierowania.

@@ -94,3 +94,15 @@ Przed publikacją wdrażaj supabase/migrations/202610140002_chat_moderation.sql.
 Usuwanie jest odwracalne: oryginalny tekst trafia do prywatnego archiwum, a publiczny wpis otrzymuje znacznik usunięcia i neutralną treść. Zwykły użytkownik nie widzi usuniętego wpisu; administrator ma przy nim Cofnij. Archiwum zachowuje treść do przywrócenia i nie jest odczytywane z aplikacji. Zmiany UPDATE odbierane są przez Realtime, a rozwinięty czat ma też odświeżanie zapasowe co 12 sekund. Nie wykonywano usunięcia żadnej istniejącej wiadomości podczas wdrożenia.
 
 Wspólny element czatu jest przeniesiony poza panel boczny i otwierany tą samą dolną ikonką na telefonie i komputerze. Bieżący szkic wiadomości pozostaje w tym samym polu.
+
+## Rozmowy, powiadomienia i bitwy (0.62)
+
+Migracja `supabase/migrations/202610140003_private_chat.sql` została wdrożona do istniejącego projektu. Wiadomości prywatne są zapisane na serwerze również dla odbiorcy offline. RLS pozwala na odczyt tylko nadawcy i odbiorcy; wysyłanie i oznaczanie odczytu odbywa się przez RPC sprawdzające konto. Lista rozmów używa wszystkich profili, a nie tylko obecności online. Moderacja czatu wspólnego nie daje dostępu do cudzych rozmów prywatnych.
+
+`eduliga-community.js` łączy czat wspólny, rozmowy prywatne i zaproszenia w jednej ikonce. Realtime uzupełnia odświeżanie co 5 sekund. Zaproszenia w rozmowie nadal korzystają z istniejących RPC i wygasają po dwóch minutach. Wibracja używa API przeglądarki; nie każda przeglądarka telefonu ją obsługuje.
+
+Bitwy korzystają z kanałów `liga-v062-{league}`. Wszyscy gracze muszą odświeżyć stronę po aktualizacji. Każda runda ma 30 sekund; „Nie wiem” i brak odpowiedzi odejmują 5 punktów za rundę. Nowy gracz dołącza do bieżącego pytania, jeśli zostało ponad 5 sekund. Host synchronizuje czas, stan, wyniki i przejęcie pokoju. Jest to protokół z gospodarzem w przeglądarce, nie serwerowy system przeciwdziałania oszustwom.
+
+`eduliga-experience.js` dodaje animacje poprawnych odpowiedzi, krótkie instrukcje i wykres dziennych punktów w Moich słowach. Szanuje ograniczenie ruchu w systemie. Zdarzenia punktowe angielskie zawierają metadane odpowiedzi, co pozwala uniknąć ich podwójnego zliczenia podczas łączenia postępu z kilku urządzeń.
+
+Sprawdzenia lokalne: `node tests/source-checks.mjs` i `node tests/learning-checks.mjs`. Test SQL `tests/private-chat-checks.sql` działa w transakcji kończonej ROLLBACK. Plików testowych, serwera podglądu ani jego fikcyjnych graczy nie publikujemy.

@@ -21,7 +21,7 @@
    (loadError?'<p class="notification-error">'+escape(loadError)+'</p><button class="secondary" onclick="refreshBattleNotifications()">Spróbuj ponownie</button>':'')+
    (invitations.length?invitations.map(invite=>'<article class="battle-invite-card"><span class="invite-icon" aria-hidden="true">⚔️</span><div><h2>'+escape(invite.sender_name)+' zaprasza Cię do bitwy</h2><p>'+escape(window.LeagueApp?.configs[invite.league||'english']?.name||'Liga Angielska')+' · wspólny pokój. Możesz dołączyć do trwającej gry.</p><small>Ważne do '+new Date(invite.expires_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})+'</small>'+
    (errors.has(invite.id)?'<p class="invite-error">'+escape(errors.get(invite.id))+'</p>':'')+'<div class="invite-card-actions"><button class="primary" type="button" onclick="respondEnglishBattleInvite(\''+invite.id+'\',true)" '+(busy.has(invite.id)?'disabled':'')+'>'+(busy.has(invite.id)?'Łączenie…':'Dołącz →')+'</button><button class="secondary" type="button" onclick="respondEnglishBattleInvite(\''+invite.id+'\',false)" '+(busy.has(invite.id)?'disabled':'')+'>Nie teraz</button></div></div></article>').join(''):'<p class="notification-empty">'+(lastPoll?'Nie masz nowych zaproszeń.':'Sprawdzam zaproszenia…')+'</p>');
-  if(invitations.length)expiryTimer=setTimeout(render,Math.max(100,Math.min(...invitations.map(x=>Date.parse(x.expires_at)-Date.now()))+50));
+  window.dispatchEvent(new CustomEvent('eduliga-invitations',{detail:{invitations:[...invitations],count:invitations.length}}));if(invitations.length)expiryTimer=setTimeout(render,Math.max(100,Math.min(...invitations.map(x=>Date.parse(x.expires_at)-Date.now()))+50));
  }
  async function poll(){
   if(!owner||polling||!client()||document.hidden)return;
@@ -31,7 +31,7 @@
    if(sequence!==generation||currentUser()?.id!==id)return;if(error)throw error;
    invitations=(rows||[]).filter(x=>!handled.has(x.id));loadError='';lastPoll=Date.now();
    const fresh=invitations.filter(x=>!seen.has(x.id));for(const x of invitations)seen.add(x.id);
-   if(fresh.length){clearTimeout(toastTimer);toast.textContent=fresh[0].sender_name+' zaprasza Cię do bitwy. Kliknij dzwonek.';toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,7000);}
+   if(fresh.length){try{navigator.vibrate?.([100,70,100]);}catch(_){}clearTimeout(toastTimer);toast.textContent=fresh[0].sender_name+' zaprasza Cię do bitwy. Otwórz rozmowy i powiadomienia.';toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,7000);}
    render();
   }catch(error){if(sequence===generation){loadError='Nie udało się pobrać zaproszeń. Ponawiam połączenie.';render();}}
   finally{if(sequence===generation)polling=false;}
@@ -97,7 +97,7 @@
   finally{if(sequence===generation){busy.delete(id);render();}}
  }
  bell.onclick=()=>{open=!open;render();if(open)void poll();};
- window.closeBattleNotifications=()=>{open=false;render();bell.focus();};
+ window.getBattleInvitations=()=>[...invitations];window.setBattleNotificationsOpen=value=>{open=!!value;render();};window.closeBattleNotifications=()=>{open=false;render();bell.focus();};
  window.refreshBattleNotifications=()=>{restart();void poll();};
  window.inviteLeagueBattleUser=inviteUser;window.respondEnglishBattleInvite=respond;window.refreshEnglishRoster=refreshRoster;
  window.addEventListener('ortoliga-auth-change',restart);

@@ -117,3 +117,14 @@ button.eduliga-brand-icon:focus-visible{outline:2px solid var(--green);outline-o
 @keyframes notification-ring{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-12deg)}40%,80%{transform:rotate(12deg)}}
 @media(max-width:650px){.battle-notification-button{right:88px;bottom:calc(21px + env(safe-area-inset-bottom));width:48px;height:48px}.battle-invite-notifications,.battle-notification-toast{bottom:calc(85px + env(safe-area-inset-bottom));right:12px;max-height:65dvh}.battle-invite-notifications{width:calc(100vw - 24px)}#arena-english .english-column-board{padding:8px}#arena-english .english-column-head span{font-size:11px;padding:6px 3px;gap:4px}#arena-english .english-column-value{padding:6px;min-height:75px;font-size:19px}#arena-english .english-inline-answer{font-size:20px;padding:8px 4px}}
 @media(prefers-reduced-motion:reduce){.battle-notification-button.has-invitations>span{animation:none}}
+
+.arena-room-actions{display:flex;flex-wrap:wrap;gap:8px}
+.arena-invite-button{margin:8px 0;min-height:44px}
+.battle-invite-picker{width:min(520px,calc(100vw - 24px));max-height:80dvh;overflow:auto;padding:26px;border:1px solid var(--line);border-radius:22px;background:var(--white);color:var(--ink)}
+.battle-invite-picker::backdrop{background:#08171099}
+.battle-invite-picker h2{margin:0 25px 10px 0;font:900 23px Nunito}.battle-invite-picker>p{font-size:13px;color:var(--muted)}
+.battle-invite-people{display:grid;gap:10px;margin-top:18px}
+.battle-invite-person{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);text-align:left;min-height:66px;cursor:pointer}
+.battle-invite-person>span{display:grid;gap:5px;min-width:0;flex:1}.battle-invite-person b{overflow-wrap:anywhere}.battle-invite-person small{color:var(--muted)}.battle-invite-person em{font-style:normal;font-size:12px;font-weight:900;color:var(--green)}
+.battle-invite-person:hover:not(:disabled){border-color:var(--green)}.battle-invite-person:disabled{opacity:.65}
+@media(max-width:650px){.battle-invite-picker{padding:22px 16px}.arena-room-header{flex-wrap:wrap}.arena-room-actions{width:100%}.arena-room-actions button{flex:1}}

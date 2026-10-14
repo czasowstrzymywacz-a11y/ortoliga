@@ -1,74 +1,88 @@
-/* English league roster actions and recipient-only invitation notifications. */
+/* Recipient-only persistent invitations, with a visible inbox and polling fallback. */
 (() => {
-  const currentUser=()=>typeof syncUser!=='undefined'?syncUser:window.ortoligaSyncUser;
-  const client=()=>window.ortoligaSyncClient;
-  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const inviteStates=new Map();window.englishInviteStates=inviteStates;
-  let generation=0,owner=null,channel=null,pollTimer=null,expiryTimer=null,statusTimer=null,polling=false;
-  let invitations=[],busy=new Set(),errors=new Map(),handled=new Set();
-  function refreshRoster(){if(typeof renderStudentRoster==='function')renderStudentRoster();}
-  function status(message,error=false){const el=document.getElementById('battle-invite-status');if(!el)return;clearTimeout(statusTimer);el.hidden=!message;el.textContent=message;el.classList.toggle('error',error);if(message)statusTimer=setTimeout(()=>el.hidden=true,error?12000:8000);}
-  function renderInvitations(){
-    const root=document.getElementById('battle-invite-notifications');if(!root)return;
-    clearTimeout(expiryTimer);invitations=invitations.filter(x=>Date.parse(x.expires_at)>Date.now());
-    root.hidden=!invitations.length;
-    root.innerHTML=invitations.slice(0,3).map(invite=>`<article class="battle-invite-card"><span class="invite-icon" aria-hidden="true">⚔️</span><div><h2>${escape(invite.sender_name)} zaprasza Cię do bitwy</h2><p>Dołącz do wspólnego pokoju Ligi Angielskiej.</p><small>Zaproszenie jest ważne przez 2 minuty.</small>${errors.has(invite.id)?`<p class="invite-error">${escape(errors.get(invite.id))}</p>`:''}<div class="invite-card-actions"><button class="primary" type="button" onclick="respondEnglishBattleInvite('${invite.id}',true)" ${busy.has(invite.id)?'disabled':''}>${busy.has(invite.id)?'Chwileczkę…':'Dołącz do bitwy →'}</button><button class="secondary" type="button" onclick="respondEnglishBattleInvite('${invite.id}',false)" ${busy.has(invite.id)?'disabled':''}>Nie teraz</button></div></div></article>`).join('');
-    if(invitations.length)expiryTimer=setTimeout(renderInvitations,Math.max(100,Math.min(...invitations.map(x=>Date.parse(x.expires_at)-Date.now()))+50));
-  }
-  async function poll(){
-    if(!owner||polling||!client())return;polling=true;const sequence=generation,id=owner;
-    try{const {data:rows,error}=await client().rpc('get_english_battle_invitations');if(sequence!==generation||currentUser()?.id!==id)return;if(error)throw error;invitations=(rows||[]).filter(x=>x.room_name==='liga-angielska-open-room'&&!handled.has(x.id));renderInvitations();}
-    catch(error){if(sequence===generation)console.warn('Battle invitations unavailable',error.message);}
-    finally{if(sequence===generation)polling=false;}
-  }
-  function restart(){
-    const user=currentUser(),nextOwner=user?.id||null;if(nextOwner===owner)return;
-    generation++;owner=nextOwner;clearInterval(pollTimer);clearTimeout(expiryTimer);polling=false;
-    const old=channel;channel=null;if(old)void client()?.removeChannel(old);
-    invitations=[];busy=new Set();errors=new Map();handled=new Set();inviteStates.clear();status('');renderInvitations();refreshRoster();
-    if(!owner||!client())return;
-    const sequence=generation,id=owner,localChannel=client().channel('english-invitations:'+id);
-    channel=localChannel;localChannel.on('postgres_changes',{event:'*',schema:'public',table:'english_battle_invitations',filter:'recipient_id=eq.'+id},()=>{if(sequence===generation)void poll();}).subscribe(state=>{if(state==='SUBSCRIBED'&&sequence===generation)void poll();});
-    pollTimer=setInterval(()=>void poll(),10000);void poll();
-  }
-  async function inviteUser(targetId){
-    const user=currentUser();if(!user){openSyncDialog();return;}if(!targetId||targetId===user.id)return;
-    const previous=inviteStates.get(targetId);if(previous&&previous.until>Date.now())return;
-    const id=user.id,sequence=generation,profile=typeof studentRoster!=='undefined'?studentRoster.find(x=>x.user_id===targetId):null;
-    inviteStates.set(targetId,{label:'Łączenie…',until:Infinity});refreshRoster();status('Wchodzę do pokoju bitew…');
-    try{
-      await window.ensureEnglishBattleRoom();if(currentUser()?.id!==id||sequence!==generation)return;
-      status('Wysyłam zaproszenie…');
-      const {error}=await client().rpc('send_english_battle_invitation',{p_recipient_id:targetId});
-      if(currentUser()?.id!==id||sequence!==generation)return;if(error)throw error;
-      const sentState={label:'Zaproszono ✓',until:Date.now()+20000};inviteStates.set(targetId,sentState);refreshRoster();
-      status('Zaproszenie do '+(profile?.display_name||'użytkownika')+' wysłane. Czekasz we wspólnym pokoju.');
-      setTimeout(()=>{if(sequence===generation&&inviteStates.get(targetId)===sentState){inviteStates.delete(targetId);refreshRoster();}},20000);
-    }catch(error){if(sequence!==generation)return;inviteStates.delete(targetId);refreshRoster();status(error.message||'Nie udało się wysłać zaproszenia. Spróbuj ponownie.',true);}
-  }
-  async function respond(invitationId,accept){
-    const invite=invitations.find(x=>x.id===invitationId),user=currentUser(),sequence=generation;
-    if(!invite||!user||busy.has(invitationId))return;
-    if(Date.parse(invite.expires_at)<=Date.now()){renderInvitations();return;}
-    busy.add(invitationId);errors.delete(invitationId);renderInvitations();
-    try{
-      if(accept)await window.ensureEnglishBattleRoom();
-      if(sequence!==generation||currentUser()?.id!==user.id)return;
-      const {error}=await client().rpc('respond_english_battle_invitation',{p_invitation_id:invitationId,p_accept:accept});
-      if(sequence!==generation)return;if(error)throw error;
-      handled.add(invitationId);invitations=invitations.filter(x=>x.id!==invitationId);renderInvitations();
-      if(accept)status('Dołączono do pokoju bitew. Zaproszenie od '+invite.sender_name+' przyjęte.');
-      void poll();
-    }catch(error){if(sequence===generation){errors.set(invitationId,error.message||'Nie udało się dołączyć. Spróbuj ponownie.');}}
-    finally{if(sequence===generation){busy.delete(invitationId);renderInvitations();}}
-  }
-  window.inviteEnglishBattleUser=inviteUser;window.respondEnglishBattleInvite=respond;
-  window.refreshEnglishRoster=refreshRoster;
-  window.addEventListener('ortoliga-auth-change',restart);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){restart();void poll();if(typeof loadStudentRoster==='function')void loadStudentRoster();}});
-  restart();
+ const currentUser=()=>typeof syncUser!=='undefined'?syncUser:window.ortoligaSyncUser;
+ const client=()=>window.ortoligaSyncClient;
+ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const inviteStates=new Map();window.englishInviteStates=inviteStates;
+ let generation=0,owner=null,channel=null,polling=false,expiryTimer=null,statusTimer=null,open=false,loadError='',lastPoll=0;
+ let invitations=[],busy=new Set(),errors=new Map(),handled=new Set(),seen=new Set();
+ const root=document.getElementById('battle-invite-notifications');
+ const bell=document.createElement('button');bell.id='battle-notification-button';bell.type='button';bell.className='battle-notification-button';bell.hidden=true;bell.setAttribute('aria-controls',root.id);bell.setAttribute('aria-expanded','false');document.body.append(bell);
+ const toast=document.createElement('div');toast.className='battle-notification-toast';toast.setAttribute('role','status');toast.hidden=true;document.body.append(toast);let toastTimer;
+ function refreshRoster(){if(typeof renderStudentRoster==='function')renderStudentRoster();}
+ function status(message,error=false){const el=document.getElementById('battle-invite-status');if(!el)return;clearTimeout(statusTimer);el.hidden=!message;el.textContent=message;el.classList.toggle('error',error);if(message)statusTimer=setTimeout(()=>el.hidden=true,error?12000:8000);}
+ function render(){
+  clearTimeout(expiryTimer);invitations=invitations.filter(x=>Date.parse(x.expires_at)>Date.now());
+  bell.hidden=!currentUser();bell.classList.toggle('has-invitations',!!invitations.length);
+  bell.setAttribute('aria-label','Zaproszenia do bitwy'+(invitations.length?' · '+invitations.length+' nowych':''));
+  bell.setAttribute('aria-expanded',String(open));bell.innerHTML='<span aria-hidden="true">🔔</span>'+(invitations.length?'<b>'+invitations.length+'</b>':'');
+  root.hidden=!open||!currentUser();
+  root.innerHTML='<header class="notification-heading"><b>Zaproszenia do bitwy</b><button type="button" onclick="closeBattleNotifications()" aria-label="Zamknij powiadomienia">×</button></header>'+
+   (loadError?'<p class="notification-error">'+escape(loadError)+'</p><button class="secondary" onclick="refreshBattleNotifications()">Spróbuj ponownie</button>':'')+
+   (invitations.length?invitations.map(invite=>'<article class="battle-invite-card"><span class="invite-icon" aria-hidden="true">⚔️</span><div><h2>'+escape(invite.sender_name)+' zaprasza Cię do bitwy</h2><p>Liga Angielska · wspólny pokój. Możesz dołączyć do trwającej gry.</p><small>Ważne do '+new Date(invite.expires_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})+'</small>'+
+   (errors.has(invite.id)?'<p class="invite-error">'+escape(errors.get(invite.id))+'</p>':'')+'<div class="invite-card-actions"><button class="primary" type="button" onclick="respondEnglishBattleInvite(\''+invite.id+'\',true)" '+(busy.has(invite.id)?'disabled':'')+'>'+(busy.has(invite.id)?'Łączenie…':'Dołącz →')+'</button><button class="secondary" type="button" onclick="respondEnglishBattleInvite(\''+invite.id+'\',false)" '+(busy.has(invite.id)?'disabled':'')+'>Nie teraz</button></div></div></article>').join(''):'<p class="notification-empty">'+(lastPoll?'Nie masz nowych zaproszeń.':'Sprawdzam zaproszenia…')+'</p>');
+  if(invitations.length)expiryTimer=setTimeout(render,Math.max(100,Math.min(...invitations.map(x=>Date.parse(x.expires_at)-Date.now()))+50));
+ }
+ async function poll(){
+  if(!owner||polling||!client()||document.hidden)return;
+  polling=true;const sequence=generation,id=owner;
+  try{
+   const {data:rows,error}=await client().rpc('get_english_battle_invitations');
+   if(sequence!==generation||currentUser()?.id!==id)return;if(error)throw error;
+   invitations=(rows||[]).filter(x=>!handled.has(x.id));loadError='';lastPoll=Date.now();
+   const fresh=invitations.filter(x=>!seen.has(x.id));for(const x of invitations)seen.add(x.id);
+   if(fresh.length){clearTimeout(toastTimer);toast.textContent=fresh[0].sender_name+' zaprasza Cię do bitwy. Kliknij dzwonek.';toast.hidden=false;toastTimer=setTimeout(()=>toast.hidden=true,7000);}
+   render();
+  }catch(error){if(sequence===generation){loadError='Nie udało się pobrać zaproszeń. Ponawiam połączenie.';render();}}
+  finally{if(sequence===generation)polling=false;}
+ }
+ function restart(){
+  const next=currentUser()?.id||null;
+  if(next===owner&&(channel||!next))return;
+  generation++;owner=next;polling=false;clearTimeout(expiryTimer);
+  const old=channel;channel=null;if(old)void client()?.removeChannel(old);
+  invitations=[];busy=new Set();errors=new Map();handled=new Set();seen=new Set();inviteStates.clear();loadError='';lastPoll=0;open=false;toast.hidden=true;render();refreshRoster();
+  if(!owner||!client())return;
+  const sequence=generation;
+  channel=client().channel('english-invitations:'+owner);
+  channel.on('postgres_changes',{event:'*',schema:'public',table:'english_battle_invitations',filter:'recipient_id=eq.'+owner},()=>{if(sequence===generation)void poll();}).subscribe(s=>{if(s==='SUBSCRIBED'&&sequence===generation)void poll();});
+  void poll();
+ }
+ async function inviteUser(targetId){
+  restart();const user=currentUser();if(!user){openSyncDialog();return;}if(!targetId||targetId===user.id)return;
+  const previous=inviteStates.get(targetId);if(previous&&previous.until>Date.now())return;
+  const sequence=generation,id=user.id,profile=typeof studentRoster!=='undefined'?studentRoster.find(x=>x.user_id===targetId):null;
+  inviteStates.set(targetId,{label:'Łączenie…',until:Infinity});refreshRoster();status('Wchodzę do pokoju bitew…');
+  try{
+   await window.ensureEnglishBattleRoom();if(currentUser()?.id!==id||sequence!==generation)return;
+   const {data:inviteId,error}=await client().rpc('send_english_battle_invitation',{p_recipient_id:targetId});
+   if(currentUser()?.id!==id||sequence!==generation)return;if(error)throw error;if(!inviteId)throw new Error('Serwer nie potwierdził zaproszenia.');
+   const sent={label:'Zaproszono ✓',until:Date.now()+20000};inviteStates.set(targetId,sent);refreshRoster();
+   status('Zaproszenie do '+(profile?.display_name||'użytkownika')+' zapisane. Odbiorca zobaczy je przy dzwonku.');
+   setTimeout(()=>{if(sequence===generation&&inviteStates.get(targetId)===sent){inviteStates.delete(targetId);refreshRoster();}},20000);
+  }catch(error){if(sequence!==generation)return;inviteStates.delete(targetId);refreshRoster();status(error.message||'Nie udało się wysłać zaproszenia.',true);}
+ }
+ async function respond(id,accept){
+  const invite=invitations.find(x=>x.id===id),user=currentUser(),sequence=generation;if(!invite||!user||busy.has(id))return;
+  if(Date.parse(invite.expires_at)<=Date.now()){render();return;}busy.add(id);errors.delete(id);render();
+  try{
+   if(accept)await window.ensureEnglishBattleRoom();
+   if(sequence!==generation||currentUser()?.id!==user.id)return;
+   const {error}=await client().rpc('respond_english_battle_invitation',{p_invitation_id:id,p_accept:accept});if(sequence!==generation)return;if(error)throw error;
+   handled.add(id);invitations=invitations.filter(x=>x.id!==id);if(accept){open=false;toast.hidden=true;status('Dołączono do pokoju. Zaproszenie od '+invite.sender_name+' przyjęte.');}render();void poll();
+  }catch(error){if(sequence===generation)errors.set(id,error.message||'Nie udało się dołączyć. Spróbuj ponownie.');}
+  finally{if(sequence===generation){busy.delete(id);render();}}
+ }
+ bell.onclick=()=>{open=!open;render();if(open)void poll();};
+ window.closeBattleNotifications=()=>{open=false;render();bell.focus();};
+ window.refreshBattleNotifications=()=>{restart();void poll();};
+ window.inviteEnglishBattleUser=inviteUser;window.respondEnglishBattleInvite=respond;window.refreshEnglishRoster=refreshRoster;
+ window.addEventListener('ortoliga-auth-change',restart);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){restart();void poll();}});
+ window.addEventListener('online',()=>{restart();void poll();});
+ setInterval(()=>{restart();void poll();},4000);
+ restart();
 })();
-
 /* Point award history, scoped to the selected league and authenticated profiles. */
 (() => {
  let dialog,selectedId='',selectedName='',selectedLeague='',request=0;

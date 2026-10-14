@@ -74,3 +74,9 @@ Główna aplikacja: https://czasowstrzymywacz-a11y.github.io/eduliga/. Repozytor
 ## Historia zdobytych punktów (0.54)
 
 Przed publikacją wdroż migrację supabase/migrations/202610130005_point_history.sql. Odczyt wymaga zalogowania i zwraca maksymalnie 30 ostatnich dodatnich nagród wskazanego profilu w wybranej lidze: liczbę punktów, kategorię, datę i godzinę. Nie zwraca odpowiedzi ani całego postępu. Nowe angielskie zdarzenia punktowe zapisują czas i kategorię; starsze bez czasu są oznaczone jako starszy zapis. Dyktanda bez godziny pokazują samą zachowaną datę. Kliknięcie pseudonimu lub punktów w liście otwiera historię z przełączaniem ligi. Historia pokazuje zdobyte punkty; kary pozostają uwzględnione w sumach rankingowych.
+
+## Dzwonek i bitwy wieloosobowe (0.59)
+
+Zaproszenia angielskie nadal korzystają z istniejącej tabeli english_battle_invitations i funkcji RPC z migracji 202610130001. Odbiorca ma stały dzwonek z licznikiem; na telefonie znajduje się obok czatu. Realtime uzupełnia odczyt co 4 sekundy oraz po powrocie do aplikacji. Błędy pobierania są widoczne w skrzynce. Wysłanie wymaga potwierdzenia identyfikatora zaproszenia z serwera i wejścia nadawcy do pokoju.
+
+W trzech ligach lista zawodników bieżącej rundy dopuszcza nowych obecnych graczy, jeśli do wspólnego końca rundy zostało ponad 5 sekund; w ostatnich sekundach osoba czeka w pokoju na kolejną rundę. Czas odpowiedzi nowego gracza liczy się od udostępnienia mu pytania. Każda bitwa ma nadal 10 rund i osobne punkty. Numer rewizji stanu chroni przed spóźnionymi starszymi wiadomościami, a zapytania o stan co 4 sekundy pozwalają odzyskać pominięty komunikat. Wszyscy uczestnicy powinni otworzyć najnowszą wersję strony.

@@ -101,3 +101,19 @@ body:not(.eduliga-home) .module-back-link{display:none}
 button.eduliga-brand-icon{border:0;padding:0;flex:none;cursor:pointer}
 button.eduliga-brand-icon:hover{filter:brightness(1.1);transform:translateY(-1px)}
 button.eduliga-brand-icon:focus-visible{outline:2px solid var(--green);outline-offset:4px}
+
+.battle-notification-button{position:fixed;right:20px;bottom:20px;width:48px;height:48px;display:grid;place-items:center;border:1px solid var(--line);border-radius:16px;background:var(--white);color:var(--ink);box-shadow:0 5px 20px #0002;z-index:80;font-size:23px;cursor:pointer}
+.battle-notification-button[hidden],.battle-invite-notifications[hidden],.battle-invite-status[hidden],.battle-notification-toast[hidden]{display:none!important}
+.battle-notification-button b{position:absolute;right:-3px;top:-4px;min-width:20px;height:20px;padding:2px 5px;background:#d75555;color:#fff;font-size:11px;border-radius:12px}
+.battle-notification-button.has-invitations>span{animation:notification-ring 1.2s ease-in-out 3;transform-origin:top center}
+.battle-invite-notifications{bottom:80px;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 12px 40px #0003}
+.notification-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.notification-heading button{border:0;background:none;color:var(--ink);font-size:25px}
+.notification-empty,.notification-error{padding:8px;font-size:13px;color:var(--muted)}
+.battle-notification-toast{position:fixed;bottom:82px;right:20px;max-width:min(360px,calc(100vw - 30px));padding:12px 16px;background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 25px #0002;z-index:85;font-size:13px}
+#arena-english .arena-form{display:block;max-width:850px;margin:0 auto}
+#arena-english .english-column-board{width:100%;margin:18px 0}
+#arena-english .english-inline-answer{width:100%;min-width:0}
+#arena-english .arena-form>.primary{display:block;width:100%;margin-top:15px}
+@keyframes notification-ring{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-12deg)}40%,80%{transform:rotate(12deg)}}
+@media(max-width:650px){.battle-notification-button{right:88px;bottom:calc(21px + env(safe-area-inset-bottom));width:48px;height:48px}.battle-invite-notifications,.battle-notification-toast{bottom:calc(85px + env(safe-area-inset-bottom));right:12px;max-height:65dvh}.battle-invite-notifications{width:calc(100vw - 24px)}#arena-english .english-column-board{padding:8px}#arena-english .english-column-head span{font-size:11px;padding:6px 3px;gap:4px}#arena-english .english-column-value{padding:6px;min-height:75px;font-size:19px}#arena-english .english-inline-answer{font-size:20px;padding:8px 4px}}
+@media(prefers-reduced-motion:reduce){.battle-notification-button.has-invitations>span{animation:none}}

@@ -128,3 +128,23 @@ button.eduliga-brand-icon:focus-visible{outline:2px solid var(--green);outline-o
 .battle-invite-person>span{display:grid;gap:5px;min-width:0;flex:1}.battle-invite-person b{overflow-wrap:anywhere}.battle-invite-person small{color:var(--muted)}.battle-invite-person em{font-style:normal;font-size:12px;font-weight:900;color:var(--green)}
 .battle-invite-person:hover:not(:disabled){border-color:var(--green)}.battle-invite-person:disabled{opacity:.65}
 @media(max-width:650px){.battle-invite-picker{padding:22px 16px}.arena-room-header{flex-wrap:wrap}.arena-room-actions{width:100%}.arena-room-actions button{flex:1}}
+
+/* One floating chat drawer for desktop and mobile. */
+.mobile-chat-button{position:fixed;display:grid;place-items:center;right:18px;bottom:calc(16px + env(safe-area-inset-bottom));width:58px;height:58px;border:2px solid #ffffffbd;border-radius:20px;z-index:75;background:linear-gradient(140deg,#337bbc,#7157ad);color:white;font-size:29px;box-shadow:0 7px 25px #172f6055;cursor:pointer}
+#sidebar-chat{display:none!important}
+body.mobile-chat-open>#sidebar-chat{display:flex!important;position:fixed;z-index:74;left:auto;right:18px;bottom:calc(85px + env(safe-area-inset-bottom));width:min(410px,calc(100vw - 24px));height:min(60dvh,480px);min-height:220px;max-height:480px;padding:16px;background:var(--white);color:var(--ink);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 40px #0004}
+#sidebar-chat header{flex-wrap:wrap;gap:8px}#sidebar-chat header>span{font-size:15px}#sidebar-chat header>small{font-size:11px}
+.mobile-chat-close{display:grid;place-items:center;flex:none;margin-left:auto;width:30px;height:30px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-size:23px}
+#sidebar-chat .chat-messages{min-height:0;gap:8px}
+#sidebar-chat .chat-message{font-size:13px;grid-template-columns:1fr auto;padding:10px;align-items:start}
+#sidebar-chat .chat-message b{max-width:none;grid-column:1;font-size:12px}
+#sidebar-chat .chat-message time{grid-column:2;grid-row:1;font-size:10px}
+#sidebar-chat .chat-message>span{grid-column:1/-1}
+#sidebar-chat .chat-message .chat-moderate{grid-column:2;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:5px 9px;font-size:11px;min-height:30px}
+#sidebar-chat .chat-message.removed>span{font-style:italic;color:var(--muted)}
+#sidebar-chat .chat-compose input{min-height:42px;font-size:16px}
+#sidebar-chat .chat-compose button{width:42px}
+#sidebar-chat .chat-footnote{font-size:10px}
+.battle-notification-button{right:88px;bottom:calc(21px + env(safe-area-inset-bottom))}
+.battle-invite-notifications,.battle-notification-toast{bottom:calc(85px + env(safe-area-inset-bottom))}
+@media(max-width:650px){body.mobile-chat-open>#sidebar-chat{right:12px;width:calc(100vw - 24px);height:min(48dvh,360px);max-height:360px;padding:13px}#sidebar-chat .chat-message{font-size:12px}.app{padding-bottom:90px}}

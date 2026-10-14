@@ -384,11 +384,49 @@ initSync=async()=>{if(!cloudConfigured()){updateSyncUi();return;}const app=docum
 const previousSetSyncUser=setSyncUser;setSyncUser=user=>{if(user&&!passwordRecoveryActive)document.querySelector('.auth-tabs').hidden=false;return previousSetSyncUser(user);};
 const previousSignOut=syncSignOut;syncSignOut=async options=>{await previousSignOut(options);if(!syncUser){document.querySelector('.auth-tabs').hidden=false;setAuthMode('login');}};
 
-let classChatChannel=null;
-function chatMessageNode(message){const row=document.createElement('article');row.className='chat-message';const who=document.createElement('b');who.textContent=message.sender_name||'Uczeń';const body=document.createElement('span');body.textContent=message.body||'';const when=document.createElement('time');when.dateTime=message.created_at||'';when.textContent=message.created_at?new Date(message.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'';row.append(who,body,when);return row;}
-function appendClassChatMessage(message){const box=document.getElementById('chat-messages');if(!box||!message)return;if(box.querySelector(`[data-chat-id="${message.id}"]`))return;const node=chatMessageNode(message);node.dataset.chatId=message.id;box.append(node);while(box.children.length>40)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
+let classChatChannel=null,classChatAdmin=false;
+function chatMessageNode(message){
+ const row=document.createElement('article');row.className='chat-message';
+ const who=document.createElement('b');who.textContent=message.sender_name||'Uczeń';
+ const body=document.createElement('span');body.textContent=message.removed_at?'Wiadomość usunięta':message.body||'';
+ const when=document.createElement('time');when.dateTime=message.created_at||'';when.textContent=message.created_at?new Date(message.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'';
+ row.append(who,body,when);
+ if(classChatAdmin){const action=document.createElement('button');action.type='button';action.className='chat-moderate';action.textContent=message.removed_at?'Cofnij':'Usuń';action.setAttribute('aria-label',(message.removed_at?'Przywróć':'Usuń')+' wiadomość od '+(message.sender_name||'ucznia'));action.onclick=()=>moderateClassChatMessage(message.id,!!message.removed_at,action);row.append(action);}
+ row.classList.toggle('removed',!!message.removed_at);return row;
+}
+function appendClassChatMessage(message){
+ const box=document.getElementById('chat-messages');if(!box||!message)return;
+ const existing=box.querySelector('[data-chat-id="'+message.id+'"]');
+ if(message.removed_at&&!classChatAdmin){existing?.remove();return;}
+ const node=chatMessageNode(message);node.dataset.chatId=message.id;
+ if(existing){existing.replaceWith(node);return;}
+ box.append(node);while(box.children.length>40)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;
+}
+async function moderateClassChatMessage(id,restore,button){
+ if(!classChatAdmin||!syncUser||button.disabled)return;
+ const owner=syncUser.id;button.disabled=true;
+ try{
+  const {error}=await window.ortoligaSyncClient.rpc('moderate_class_chat_message',{p_message_id:id,p_restore:restore});if(error)throw error;
+  if(syncUser?.id!==owner)return;
+  const {data:message,error:readError}=await window.ortoligaSyncClient.from('class_chat_messages').select('id,sender_id,sender_name,body,created_at,removed_at').eq('id',id).single();
+  if(readError)throw readError;if(syncUser?.id===owner)appendClassChatMessage(message);
+ }catch(error){if(syncUser?.id===owner)document.getElementById('chat-status').textContent=error.message||'Nie udało się zmienić wiadomości';}
+ finally{button.disabled=false;}
+}
 let classChatGeneration=0;
-async function startClassChat(){const generation=++classChatGeneration,accountSequence=accountLoadSequence,status=document.getElementById('chat-status'),input=document.getElementById('chat-input'),submit=document.querySelector('.chat-compose button'),box=document.getElementById('chat-messages');if(!status||!input||!submit||!box)return;const chatClient=window.ortoligaSyncClient||syncClient;if(!chatClient){input.disabled=true;submit.disabled=true;status.textContent='Przygotowuję połączenie z kontem…';return;}window.ortoligaSyncClient=chatClient;status.textContent='Sprawdzam konto…';try{const {data:sessionData,error:sessionError}=await chatClient.auth.getSession();if(generation!==classChatGeneration||accountSequence!==accountLoadSequence)return;if(sessionError)throw sessionError;const sessionUser=sessionData?.session?.user||null;if(sessionUser&&syncUser?.id!==sessionUser.id){await previousSetSyncUserForChat(sessionUser);if(generation!==classChatGeneration)return;}if(!sessionUser){if(classChatChannel){await chatClient.removeChannel(classChatChannel);classChatChannel=null;}if(generation!==classChatGeneration)return;box.replaceChildren();input.disabled=true;submit.disabled=true;status.textContent='Zaloguj się, aby dołączyć';return;}window.ortoligaSyncUser=sessionUser;if(classChatChannel){await chatClient.removeChannel(classChatChannel);classChatChannel=null;}if(generation!==classChatGeneration)return;box.replaceChildren();input.disabled=false;submit.disabled=false;status.textContent='Łączę czat z Twoim kontem…';const {data,error}=await chatClient.from('class_chat_messages').select('id,sender_id,sender_name,body,created_at').order('created_at',{ascending:false}).limit(30);if(generation!==classChatGeneration)return;if(error)throw error;(data||[]).reverse().forEach(appendClassChatMessage);classChatChannel=chatClient.channel('ortoliga-class-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'class_chat_messages'},event=>{if(generation===classChatGeneration)appendClassChatMessage(event.new)}).subscribe(state=>{if(generation===classChatGeneration)status.textContent=state==='SUBSCRIBED'?'● Wspólna rozmowa':'Łączenie…';});}catch(error){if(generation!==classChatGeneration)return;status.textContent='Czat chwilowo niedostępny';input.disabled=true;submit.disabled=true;console.warn('Class chat connection failed',error);}}
+async function startClassChat(){classChatAdmin=false;const generation=++classChatGeneration,accountSequence=accountLoadSequence,status=document.getElementById('chat-status'),input=document.getElementById('chat-input'),submit=document.querySelector('.chat-compose button'),box=document.getElementById('chat-messages');if(!status||!input||!submit||!box)return;const chatClient=window.ortoligaSyncClient||syncClient;if(!chatClient){input.disabled=true;submit.disabled=true;status.textContent='Przygotowuję połączenie z kontem…';return;}window.ortoligaSyncClient=chatClient;status.textContent='Sprawdzam konto…';try{const {data:sessionData,error:sessionError}=await chatClient.auth.getSession();if(generation!==classChatGeneration||accountSequence!==accountLoadSequence)return;if(sessionError)throw sessionError;const sessionUser=sessionData?.session?.user||null;if(sessionUser&&syncUser?.id!==sessionUser.id){await previousSetSyncUserForChat(sessionUser);if(generation!==classChatGeneration)return;}if(!sessionUser){if(classChatChannel){await chatClient.removeChannel(classChatChannel);classChatChannel=null;}if(generation!==classChatGeneration)return;box.replaceChildren();input.disabled=true;submit.disabled=true;status.textContent='Zaloguj się, aby dołączyć';return;}window.ortoligaSyncUser=sessionUser;if(classChatChannel){await chatClient.removeChannel(classChatChannel);classChatChannel=null;}if(generation!==classChatGeneration)return;box.replaceChildren();input.disabled=false;submit.disabled=false;status.textContent='Łączę czat z Twoim kontem…';const role=await chatClient.rpc('is_chat_admin');if(generation!==classChatGeneration)return;classChatAdmin=!role.error&&role.data===true;const {data,error}=await chatClient.from('class_chat_messages').select('id,sender_id,sender_name,body,created_at,removed_at').order('created_at',{ascending:false}).limit(30);if(generation!==classChatGeneration)return;if(error)throw error;(data||[]).reverse().forEach(appendClassChatMessage);classChatChannel=chatClient.channel('ortoliga-class-chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'class_chat_messages'},event=>{if(generation===classChatGeneration)appendClassChatMessage(event.new)}).on('postgres_changes',{event:'UPDATE',schema:'public',table:'class_chat_messages'},event=>{if(generation===classChatGeneration)appendClassChatMessage(event.new)}).subscribe(state=>{if(generation===classChatGeneration)status.textContent=state==='SUBSCRIBED'?'● Wspólna rozmowa':'Łączenie…';});}catch(error){if(generation!==classChatGeneration)return;status.textContent='Czat chwilowo niedostępny';input.disabled=true;submit.disabled=true;console.warn('Class chat connection failed',error);}}
+let chatPollBusy=false;
+window.refreshClassChatMessages=async()=>{
+ if(chatPollBusy||!syncUser||!window.ortoligaSyncClient)return;
+ chatPollBusy=true;const owner=syncUser.id,generation=classChatGeneration;
+ try{
+  const {data:rows,error}=await window.ortoligaSyncClient.from('class_chat_messages').select('id,sender_id,sender_name,body,created_at,removed_at').order('created_at',{ascending:false}).limit(30);
+  if(error)throw error;
+  if(syncUser?.id!==owner||generation!==classChatGeneration)return;
+  (rows||[]).reverse().forEach(appendClassChatMessage);
+ }catch{}finally{chatPollBusy=false;}
+};
+setInterval(()=>{if(!document.hidden&&document.body.classList.contains('mobile-chat-open'))void window.refreshClassChatMessages();},12000);
 window.ortoligaStartClassChat=startClassChat;
 sendClassChat=async event=>{event.preventDefault();const input=document.getElementById('chat-input'),body=input.value.trim(),chatClient=window.ortoligaSyncClient,chatUser=window.ortoligaSyncUser;if(!body||!chatUser||!chatClient)return;const button=document.querySelector('.chat-compose button');input.disabled=true;button.disabled=true;try{const {error}=await chatClient.from('class_chat_messages').insert({sender_id:chatUser.id,sender_name:'',body});if(error)throw error;input.value='';}catch(error){document.getElementById('chat-status').textContent=error.message?.includes('Odczekaj')?'Odczekaj chwilę':'Nie udało się wysłać';}finally{input.disabled=!window.ortoligaSyncUser;button.disabled=!window.ortoligaSyncUser;if(window.ortoligaSyncUser)input.focus();}};
 const previousSetSyncUserForChat=setSyncUser;setSyncUser=async user=>{await previousSetSyncUserForChat(user);window.ortoligaSyncUser=syncUser;if(syncUser?.id!==user?.id)return;await startClassChat();if(syncUser&&!passwordRecoveryActive&&document.getElementById('sync-dialog').open)closeSyncDialog();};

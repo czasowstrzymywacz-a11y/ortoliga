@@ -86,3 +86,11 @@ W trzech ligach lista zawodników bieżącej rundy dopuszcza nowych obecnych gra
 Wdróż supabase/migrations/202610140001_all_league_invitations.sql przed publikacją. Istniejąca tabela zaproszeń otrzymuje pole league; polityki dostępu nadal dopuszczają wyłącznie uczestników zaproszenia. Nowe RPC send_league_battle_invitation i get_league_battle_invitations obsługują trzy ligi. Starsze angielskie zaproszenia zachowują ligę english, a wcześniejszy odczyt RPC zwraca tylko angielskie zaproszenia. Odpowiedź korzysta z dotychczasowej funkcji respond_english_battle_invitation i sprawdza tożsamość odbiorcy.
 
 Przycisk Zaproś istnieje tylko w panelu Bitwa każdej ligi, przed i po wejściu do pokoju. Lista pokazuje obecnych w kanale aktywności użytkowników, z pominięciem zapraszającego. Kliknięcie wchodzi do pokoju wybranej ligi i zapisuje zaproszenie; odbiorca widzi nazwę ligi przy dzwonku i po przyjęciu trafia do tego samego pokoju. Ogólne listy użytkowników zachowują wyłącznie dostęp do historii punktów.
+
+## Czat w ikonce i moderacja (0.61)
+
+Przed publikacją wdrażaj supabase/migrations/202610140002_chat_moderation.sql. Role moderacji czatu są przypisane do zweryfikowanych identyfikatorów istniejących kont Filipa i Dominika. Zmiana pseudonimu nie nadaje uprawnień. Tabele class_chat_admins oraz class_chat_removed_text mają RLS i nie są udostępnione klientom. Funkcja is_chat_admin zwraca tylko status bieżącego konta; moderate_class_chat_message sprawdza rolę przy każdym wywołaniu.
+
+Usuwanie jest odwracalne: oryginalny tekst trafia do prywatnego archiwum, a publiczny wpis otrzymuje znacznik usunięcia i neutralną treść. Zwykły użytkownik nie widzi usuniętego wpisu; administrator ma przy nim Cofnij. Archiwum zachowuje treść do przywrócenia i nie jest odczytywane z aplikacji. Zmiany UPDATE odbierane są przez Realtime, a rozwinięty czat ma też odświeżanie zapasowe co 12 sekund. Nie wykonywano usunięcia żadnej istniejącej wiadomości podczas wdrożenia.
+
+Wspólny element czatu jest przeniesiony poza panel boczny i otwierany tą samą dolną ikonką na telefonie i komputerze. Bieżący szkic wiadomości pozostaje w tym samym polu.

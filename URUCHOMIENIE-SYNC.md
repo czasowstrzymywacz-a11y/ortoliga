@@ -19,7 +19,7 @@ W GitHub wybierz **Settings → Pages → Deploy from a branch**, gałąź `main
 ## Supabase — konfiguracja e-mail
 
 1. W projekcie Supabase powiązanym ze stroną otwórz **Authentication → URL Configuration**.
-2. Ustaw **Site URL** na `https://czasowstrzymywacz-a11y.github.io/ortoliga/`.
+2. Ustaw **Site URL** na `https://eduliga.web.app/`. Zachowaj stare adresy GitHub Pages na liście dozwolonych powrotów logowania i dodaj dokładnie `https://eduliga.web.app/`.
 3. Dodaj ten sam adres do **Redirect URLs** (w razie potrzeby także `https://czasowstrzymywacz-a11y.github.io/ortoliga/**`).
 4. W **Authentication → Providers → Email** włącz Email. Potwierdzanie adresów może pozostać włączone: uczeń kliknie link w skrzynce, a potem zaloguje się tym samym adresem lub swoim pseudonimem i hasłem. Dodaj adres strony do dozwolonych adresów powrotu, aby działały potwierdzanie e-maila i reset hasła.
 5. Otwórz **SQL Editor**, wklej zawartość `supabase-sync.sql` i wybierz **Run**. Skrypt bezpiecznie tworzy tabele, zasady dostępu, profil rankingowy i funkcję rankingu. Można go uruchamiać ponownie po aktualizacjach.
@@ -132,3 +132,11 @@ Za każdą wysłaną odpowiedź w cudzym pytaniu przysługuje 5 pXP, najwyżej z
 Dwa warianty OCR: przetworzony blok wierszy oraz oryginalny kadr o luźnym układzie; jawny wynik blocks służy do wskazania słów o niskiej pewności. Wynik jest sugestią, bez dostępu do wzorca dyktanda i bez korekty pisowni. Użytkownik porównuje edytowalny tekst ze zdjęciem i zaznacza potwierdzenie przed przekazaniem do istniejącej oceny. Edycja tekstu lub kadru unieważnia potwierdzenie. Ponowny odczyt i przełączenie wariantu pytają przed nadpisaniem poprawek. Przerwanie zamyka worker; spóźnione wyniki ignorowane są przez numer operacji. Wyjście z aparatu i zmiana konta czyszczą odczyt. Bloczkowy wybór pozostaje dostępny.
 
 Ograniczenie: Tesseract jest silnikiem głównie do druku. Ta wersja poprawia przygotowanie zdjęcia i przepływ zatwierdzania, nie gwarantuje automatycznego odczytu niewyraźnego pisma odręcznego. Skreślenia wymagają ręcznej kontroli. Nie przyznajemy wyników automatycznie na podstawie niepotwierdzonego OCR.
+
+## Firebase Hosting — od 0.66
+
+Adres główny: https://eduliga.web.app/. Projekt Firebase i site ID: eduliga, plan Spark. Pliki aplikacji i historia źródeł nadal pozostają na GitHubie. Aktualizacja wymaga publikacji Firebase oraz GitHub Pages; samo wysłanie commita nie wdraża Firebase. Przygotuj numer i historię raz, następnie uruchom `.firebase-hosting/Deploy-Hosting.ps1`. Pakiet publiczny ma jawną listę plików i nie obejmuje narzędzi, kluczy, dokumentacji ani testów. Potwierdź nową stronę przed aktualizacją kopii i przekierowań GitHub Pages.
+
+Stare `/eduliga/` pozostaje pełną aplikacją. `eduliga-hosting.js` automatycznie przekierowuje tylko bez lokalnej sesji, wyników i parametrów odzyskiwania konta. Inni widzą informację o nowym adresie i mogą nadal ćwiczyć na starym. Przycisk przejścia zalogowanego użytkownika najpierw sprawdza zapis wyników w Supabase. Wyniki gości pozostają na starym adresie; nie są samoczynnie kopiowane na nową domenę. Sesje i tokeny logowania nie są przenoszone między domenami. Stare `/ortoliga/` nadal kieruje do chronionego `/eduliga/`.
+
+Test 17.10.2026: utworzenie nowego konta przez ten sam endpoint co formularz, dostarczenie potwierdzenia na testowy alias właściciela, aktywacja na nowym adresie, poprawna odpowiedź za 10 aXP, odświeżenie i niezależne logowanie/odczyt z bazy zakończyły się poprawnie. To nie dowodzi gotowości masowej rejestracji: custom SMTP pozostaje wyłączone. Domyślna poczta Supabase ma ograniczenia odbiorców i niski limit wysyłki. Przed szerszą publikacją skonfiguruj własny SMTP; nie wyłączaj potwierdzania adresów bez odrębnej decyzji.

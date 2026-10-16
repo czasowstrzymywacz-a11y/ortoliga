@@ -116,3 +116,11 @@ Za pierwszą odpowiedź w cudzym pytaniu przysługuje 5 pXP, najwyżej w 10 pyta
 `eduliga-topics.js`: angielski część 1 be–feel (identyfikatory 0–20 zachowane), część 2 fight–lose (21–39), fiszki PL / 1. forma / 2. forma z głosem en-GB. Learn dopuszcza learnt i learned. Nadal ćwiczymy tylko dwie formy. Wybór działu steruje treningiem, tabelą słów i pulą bitew; punkty pozostają wspólne w danej lidze. Hiszpański: dział „Poznajmy się — powitania, szkoła i zainteresowania”, cała dotychczasowa baza 65 słów i zwrotów. Przycisk Zmień dział wraca do kafelków.
 
 Kanały bitew `liga-v063-{league}-{topic}` rozdzielają działy. Zaproszenia używają nowych funkcji `send_topic_battle_invitation` / `get_topic_battle_invitations` i przyjmując je wybieramy dział nadawcy. Wszyscy gracze muszą odświeżyć stronę. `get_league_roster_v63` dodaje pXP do list użytkowników i sumy punktów. Ranking i historia pomocnika bazują bezpośrednio na tabelach serwera, nie na lokalnym postępie.
+
+## Moderacja Ligi Pomocnika i prostszy formularz (0.64)
+
+Przed publikacją wdroż `supabase/migrations/202610160002_helper_moderation.sql`. Role administratorów korzystają z istniejącej listy zweryfikowanych kont Filipa i Dominika (`is_chat_admin`). Funkcja `moderate_helper_entry` sprawdza uprawnienia na serwerze. Usunięcie oznacza ukrycie, z opcją przywrócenia. Ukryte pytanie ukrywa też odpowiedzi; ukryte wpisy i ich zdjęcia nie są odczytywane przez pozostałych uczniów. Administrator nadal może odczytać je, aby cofnąć usunięcie. Wcześniej wystawione podpisane adresy zdjęć wygasają najpóźniej po 5 minutach. Historycznie przyznane pXP pozostają zachowane.
+
+Formularz pytania zawiera przedmiot (także język niemiecki), datę lekcji, opis i opcjonalne zdjęcie. Tytuł kafelka tworzy serwer z pierwszych 100 znaków opisu. Pole tytułu pozostaje w bazie dla zgodności wcześniejszych wpisów, ale nie występuje w formularzu.
+
+Za każdą wysłaną odpowiedź w cudzym pytaniu przysługuje 5 pXP, najwyżej za 10 odpowiedzi dziennie. Nie trzeba czekać na zatwierdzenie. Osobne 15 pXP przyznaje autor pytania wybierając pomocną odpowiedź. Zdarzenia nowych odpowiedzi mają reply_id i są przypisane do konkretnego wpisu; wcześniejsze nagrody pozostają zachowane. Własne pytania i odpowiedzi nadal nie dają punktów. Po wysłaniu aplikacja pokazuje, czy przyznano nagrodę.

@@ -26,7 +26,7 @@ foreach ($pattern in @($metaPattern, $badgePattern)) {
 }
 $html = [regex]::Replace($html, $metaPattern, ('<meta name="application-version" content="{0}">' -f $Version))
 $html = [regex]::Replace($html, $badgePattern, ('<button type="button" id="app-version" class="app-version" title="Pokaż historię wersji" onclick="openVersionHistory()">v{0}</button>' -f $Version))
-foreach ($asset in @('ortoliga.css','ortoliga-core.js','ortoliga.js','liga-angielska.css','liga-angielska.js','liga-social.js','liga-rankings.js','liga-platform.js','liga-platform.css','liga-hiszpanska-data.js','liga-hiszpanska.js','liga-arena.js','liga-zdania.js','eduliga-ui.js','eduliga-community.js','eduliga-experience.js','eduliga-topics.js','liga-pomocnika.js')) {
+foreach ($asset in @('ortoliga.css','ortoliga-core.js','ortoliga.js','liga-angielska.css','liga-angielska.js','liga-social.js','liga-rankings.js','liga-platform.js','liga-platform.css','liga-hiszpanska-data.js','liga-hiszpanska.js','liga-arena.js','liga-zdania.js','eduliga-ui.js','eduliga-community.js','eduliga-experience.js','eduliga-topics.js','liga-pomocnika.js','eduliga-ocr.js')) {
     $pattern = [regex]::Escape($asset) + '\?v=\d+\.\d+'
     $html = [regex]::Replace($html, $pattern, ($asset + '?v=' + $Version))
 }

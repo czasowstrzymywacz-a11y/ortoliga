@@ -124,3 +124,11 @@ Przed publikacją wdroż `supabase/migrations/202610160002_helper_moderation.sql
 Formularz pytania zawiera przedmiot (także język niemiecki), datę lekcji, opis i opcjonalne zdjęcie. Tytuł kafelka tworzy serwer z pierwszych 100 znaków opisu. Pole tytułu pozostaje w bazie dla zgodności wcześniejszych wpisów, ale nie występuje w formularzu.
 
 Za każdą wysłaną odpowiedź w cudzym pytaniu przysługuje 5 pXP, najwyżej za 10 odpowiedzi dziennie. Nie trzeba czekać na zatwierdzenie. Osobne 15 pXP przyznaje autor pytania wybierając pomocną odpowiedź. Zdarzenia nowych odpowiedzi mają reply_id i są przypisane do konkretnego wpisu; wcześniejsze nagrody pozostają zachowane. Własne pytania i odpowiedzi nadal nie dają punktów. Po wysłaniu aplikacja pokazuje, czy przyznano nagrodę.
+
+## Lokalny odczyt zdjęć i potwierdzanie zapisu (0.65)
+
+`eduliga-ocr.js` zastępuje automatyczne uruchamianie starego OCR widokiem kadrowania i weryfikacji. Zdjęcia i tekst rozpoznawane są lokalnie przez Tesseract.js; pobierane są jedynie biblioteki i polski model. Nie wysyłamy zdjęć do dodatkowej usługi. Obrót 90°, wyrównanie wierszy do 12° i suwaki przycięcia pozwalają odciąć tło. Skalowanie do maksymalnie 3200 px, do 2× dla małych wycinków. Opcjonalna normalizacja jasności lokalnego tła zachowuje odcienie szarości, bez twardego progowania mogącego usuwać polskie znaki. Aparat otrzymuje prośbę o wyższą rozdzielczość, zależnie od możliwości urządzenia.
+
+Dwa warianty OCR: przetworzony blok wierszy oraz oryginalny kadr o luźnym układzie; jawny wynik blocks służy do wskazania słów o niskiej pewności. Wynik jest sugestią, bez dostępu do wzorca dyktanda i bez korekty pisowni. Użytkownik porównuje edytowalny tekst ze zdjęciem i zaznacza potwierdzenie przed przekazaniem do istniejącej oceny. Edycja tekstu lub kadru unieważnia potwierdzenie. Ponowny odczyt i przełączenie wariantu pytają przed nadpisaniem poprawek. Przerwanie zamyka worker; spóźnione wyniki ignorowane są przez numer operacji. Wyjście z aparatu i zmiana konta czyszczą odczyt. Bloczkowy wybór pozostaje dostępny.
+
+Ograniczenie: Tesseract jest silnikiem głównie do druku. Ta wersja poprawia przygotowanie zdjęcia i przepływ zatwierdzania, nie gwarantuje automatycznego odczytu niewyraźnego pisma odręcznego. Skreślenia wymagają ręcznej kontroli. Nie przyznajemy wyników automatycznie na podstawie niepotwierdzonego OCR.

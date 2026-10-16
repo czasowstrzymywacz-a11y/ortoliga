@@ -25,7 +25,7 @@
  function taskFor(key){
   if(key==='ortho')return ortho[Math.floor(Math.random()*ortho.length)];
   if(key==='spanish')return validTask(key,{id:SPANISH_WORDS[Math.floor(Math.random()*SPANISH_WORDS.length)].id});
-  const v=window.ENGLISH_VERBS[Math.floor(Math.random()*window.ENGLISH_VERBS.length)],modes=/[\s/()]/.test(v.pl)?['pl-to-pair','base-to-past','past-to-base']:['pl-to-pair','base-to-past','past-to-base','en-to-pl'];
+  const pool=window.getEnglishVocabulary?.()||window.ENGLISH_VERBS,v=pool[Math.floor(Math.random()*pool.length)],modes=/[\s/()]/.test(v.pl)?['pl-to-pair','base-to-past','past-to-base']:['pl-to-pair','base-to-past','past-to-base','en-to-pl'];
   return validTask(key,{id:v.id,mode:modes[Math.floor(Math.random()*modes.length)]});
  }
  function correctness(key,t,answers){return t.wants.map((want,i)=>key==='spanish'?window.spanishAnswerCorrect(answers[i],want):key==='english'?window.englishAnswerCorrect(answers[i],want,t.mode):answers[i]===want);}
@@ -62,7 +62,7 @@ const players={};
   if(!A.configs[key])return;if(!uid()){openSyncDialog();return;}
   if(!syncReady){lobby(key);document.querySelector('#'+boards[key]+' .arena-status').textContent='Pobieram Twoje postępy. Spróbuj za chwilę.';return;}
   if(room?.league===key&&room.owner===uid())return;leave();
-  const owner=uid(),ch=window.ortoligaSyncClient.channel('liga-v062-'+key,{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
+  const owner=uid(),ch=window.ortoligaSyncClient.channel('liga-v063-'+key+'-'+(window.learningTopic?.(key)||'part1'),{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
   room={league:key,owner,joined:Date.now(),players:{},host:null,connected:false,phase:'lobby',match:null,round:0,task:null,startAt:0,roster:[],answers:{},results:{},scores:{},names:{},starts:{},revision:0,answered:false,localAnswer:null,clockOffset:0};
   const active=()=>channel===ch&&room?.owner===owner&&uid()===owner;
   ch.on('presence',{event:'sync'},()=>{if(active())presenceChanged(ch,owner);
@@ -177,7 +177,7 @@ const players={};
  document.addEventListener('submit',e=>{if(e.target.matches('.arena-form')){e.preventDefault();answer([...e.target.querySelectorAll('.arena-answer')].map(x=>x.value.trim()));}});
  document.addEventListener('click',e=>{const x=e.target.closest('[data-arena-option]');if(x)answer([x.dataset.arenaOption]);});
  async function ensureRoom(key){
-  const account=uid(),until=Date.now()+15000;while(!syncReady&&uid()===account&&Date.now()<until)await new Promise(r=>setTimeout(r,200));
+  window.ensureLearningTopic?.(key);const account=uid(),until=Date.now()+15000;while(!syncReady&&uid()===account&&Date.now()<until)await new Promise(r=>setTimeout(r,200));
   if(!syncReady||!account||uid()!==account)throw new Error('Poczekaj na zakończenie logowania i spróbuj ponownie.');
   if(document.body.dataset.activeLeague!==key)window.switchLeague(key);
   if(key==='english'){window.showView('english');window.englishTab('battle');}else if(key==='spanish'){window.showView('spanish');window.spanishTab('battle');}else window.showView('ortho-battle');

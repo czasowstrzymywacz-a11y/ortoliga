@@ -106,3 +106,13 @@ Bitwy korzystają z kanałów `liga-v062-{league}`. Wszyscy gracze muszą odświ
 `eduliga-experience.js` dodaje animacje poprawnych odpowiedzi, krótkie instrukcje i wykres dziennych punktów w Moich słowach. Szanuje ograniczenie ruchu w systemie. Zdarzenia punktowe angielskie zawierają metadane odpowiedzi, co pozwala uniknąć ich podwójnego zliczenia podczas łączenia postępu z kilku urządzeń.
 
 Sprawdzenia lokalne: `node tests/source-checks.mjs` i `node tests/learning-checks.mjs`. Test SQL `tests/private-chat-checks.sql` działa w transakcji kończonej ROLLBACK. Plików testowych, serwera podglądu ani jego fikcyjnych graczy nie publikujemy.
+
+## Działy materiału i Liga Pomocnika (0.63)
+
+Przed publikacją wdroż `supabase/migrations/202610160001_helper_and_topics.sql`. Nowa liga ma osobne tabele pytań, odpowiedzi i punktów przyznawanych przez serwer. Pytanie i odpowiedź mogą zawierać jedno zdjęcie: plik jest skalowany do 1800 px i zapisywany jako JPEG bez metadanych aparatu. Prywatny zasobnik `helper-images` dopuszcza odczyt zalogowanych uczniów; linki podpisane wygasają po 5 minutach. Formularz pozwala wybrać zdjęcie lub użyć aparatu urządzenia. Nie ma dostępu gościa do forum ani obrazów.
+
+Za pierwszą odpowiedź w cudzym pytaniu przysługuje 5 pXP, najwyżej w 10 pytaniach dziennie. Gdy autor wybierze przydatną odpowiedź, jej autor otrzymuje 15 pXP. Własne pytania i odpowiedzi nie przynoszą punktów, jedno pytanie ma jedno podziękowanie. Klient nie może sam dopisywać punktów. Wpisy mają ograniczenie długości i odstęp 15 sekund. Widok pytań ładuje 150 najnowszych wpisów, odpowiedzi w wątku do 250; odświeża się co 30 sekund lub na żądanie.
+
+`eduliga-topics.js`: angielski część 1 be–feel (identyfikatory 0–20 zachowane), część 2 fight–lose (21–39), fiszki PL / 1. forma / 2. forma z głosem en-GB. Learn dopuszcza learnt i learned. Nadal ćwiczymy tylko dwie formy. Wybór działu steruje treningiem, tabelą słów i pulą bitew; punkty pozostają wspólne w danej lidze. Hiszpański: dział „Poznajmy się — powitania, szkoła i zainteresowania”, cała dotychczasowa baza 65 słów i zwrotów. Przycisk Zmień dział wraca do kafelków.
+
+Kanały bitew `liga-v063-{league}-{topic}` rozdzielają działy. Zaproszenia używają nowych funkcji `send_topic_battle_invitation` / `get_topic_battle_invitations` i przyjmując je wybieramy dział nadawcy. Wszyscy gracze muszą odświeżyć stronę. `get_league_roster_v63` dodaje pXP do list użytkowników i sumy punktów. Ranking i historia pomocnika bazują bezpośrednio na tabelach serwera, nie na lokalnym postępie.

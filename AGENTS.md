@@ -15,3 +15,4 @@
 - Od 0.56 publikuj również pliki flag: eduliga-flag-en.svg i eduliga-flag-es.svg.
 - Od 0.57 publikuj także eduliga-flag-pl.svg.
 - Od 0.62 publikuj również eduliga-community.js i eduliga-experience.js.
+- Od 0.63 publikuj również eduliga-topics.js i liga-pomocnika.js.

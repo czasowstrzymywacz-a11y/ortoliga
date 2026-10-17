@@ -186,3 +186,9 @@ Każde sprawdzone zadanie czasów otrzymuje objaśnienie konstrukcji (twierdzeni
 ## Wydanie 0.73
 
 Menu zadań obu lig językowych jest ukrywane przed wyborem działu oraz na ekranie kafelków zakresu, także po powrocie przez Zmień dział. Przyciski lig i powrót do strony głównej pozostają dostępne. Bitwa angielskich czasów ma limit 90 sekund, inne działy 30; wspólna funkcja ustala odliczanie, termin odpowiedzi, czas przy braku odpowiedzi i limit bonusu lidera. Nowy kanał liga-v073-english-tenses izoluje graczy od starszych kart z limitem 30 s; potrzebne odświeżenie. Brak migracji.
+
+## Wydanie 0.74
+
+Migracja 202610170005_admin_signup_notifications.sql tworzy trwałe zdarzenia nowych kont przez trigger AFTER INSERT w Auth. Nie dodaje historycznych kont. Zdarzenie powstaje w transakcji rejestracji, raz na użytkownika; usunięcie konta usuwa jego powiadomienie. Migruj przed publikacją klienta. Bez adresów e-mail i haseł w danych klienta; tylko pseudonim i czas. Bezpośredni dostęp do tabeli jest zablokowany RLS i brakiem uprawnień; RPC sprawdza istniejące is_chat_admin. Inni użytkownicy dostają puste wyniki. Odczyt osobny dla każdego admina, przechowywany na serwerze; klient oznacza tylko pokazane identyfikatory. Nieodczytane pierwsze, do 100 naraz, odświeżanie co 5 sekund przy widocznej stronie. Czyszczenie stanu przy zmianie konta.
+
+Sprawdzono ustawienia Supabase Auth → SMTP: własny SMTP jest wyłączony. W tym wydaniu nie skonfigurowano usługi wysyłki ani powiadomień e-mail; domyślnych wiadomości logowania nie wykorzystujemy do alertów administratora.

@@ -1,7 +1,7 @@
 /* Shared compact inbox: public room, persistent private conversations and invitations. */
 (() => {
  const hub=document.getElementById('sidebar-chat'),fab=document.getElementById('mobile-chat-button'),header=hub.querySelector('header');
- let tab='common',peer=null,owner=null,generation=0,channel=null,inbox=[],invites=[],sending=false,polling=false,threadVersion=0,commonUnread=0,helperRows=[],helperRead=new Set(),helperBusy=false,helperError='';
+ let tab='common',peer=null,owner=null,generation=0,channel=null,inbox=[],invites=[],sending=false,polling=false,threadVersion=0,commonUnread=0,helperRows=[],helperRead=new Set(),helperBusy=false,helperError='',signupRows=[],signupCount=0,signupAdmin=false,signupBusy=false,signupError='';
  const drafts=new Map(),seen=new Set(),client=()=>window.ortoligaSyncClient,user=()=>window.LeagueApp?.user();
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const common=document.createElement('div');common.className='community-common';
@@ -11,19 +11,19 @@
  const privatePane=document.createElement('section');privatePane.className='community-private';privatePane.hidden=true;
  const invitationPane=document.createElement('section');invitationPane.className='community-invitations';invitationPane.hidden=true;
  invitationPane.append(document.getElementById('battle-invite-notifications'));
- const helperPane=document.createElement('section');helperPane.className='community-helper';helperPane.hidden=true;const suggestionPane=document.createElement('section');suggestionPane.className='community-suggestions';suggestionPane.hidden=true;hub.append(tabs,common,privatePane,invitationPane,helperPane,suggestionPane);
+ const helperPane=document.createElement('section');helperPane.className='community-helper';helperPane.hidden=true;const suggestionPane=document.createElement('section');suggestionPane.className='community-suggestions';suggestionPane.hidden=true;const signupPane=document.createElement('section');signupPane.className='community-signups';signupPane.hidden=true;hub.append(tabs,common,privatePane,invitationPane,helperPane,suggestionPane,signupPane);
  const opened=()=>document.body.classList.contains('mobile-chat-open');
  function profiles(){return typeof studentRoster==='undefined'?[]:studentRoster;}
  function peerName(id){return profiles().find(p=>p.user_id===id)?.display_name||'Użytkownik';}
  function unread(){return inbox.reduce((sum,x)=>sum+Number(x.unread||0),0);}
  function badge(n){return n?'<b class="inbox-count">'+n+'</b>':'';}
  function paintIcon(){hub.classList.toggle('community-signed-in',!!user());
-  const hn=helperUnread(),sn=window.EduSuggestions?.count()||0,n=unread()+commonUnread+invites.length+hn+sn,kind=invites.length?'battle':sn?'idea':hn?'helper':unread()+commonUnread?'message':'none';
+  const hn=helperUnread(),sn=window.EduSuggestions?.count()||0,n=unread()+commonUnread+invites.length+hn+sn+signupCount,kind=invites.length?'battle':signupCount?'signup':sn?'idea':hn?'helper':unread()+commonUnread?'message':'none';
   fab.dataset.noticeKind=kind;fab.classList.toggle('has-notice',n>0);
-  fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='idea'?'💡':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(sn?'<em>💡</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
+  fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='signup'?'👤':kind==='idea'?'💡':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(sn?'<em>💡</em>':'')+(signupCount?'<em>👤</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
   fab.setAttribute('aria-label',(opened()?'Zamknij':'Otwórz')+' rozmowy i powiadomienia'+(n?' · '+n+' nowych':''));
   fab.setAttribute('aria-expanded',String(opened()));
-  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'">💡 Pomysły '+badge(sn)+'</button>';
+  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'">💡 Pomysły '+badge(sn)+'</button>'+(signupAdmin?'<button data-community-tab="signups" aria-pressed="'+(tab==='signups')+'">👤 Nowe konta '+badge(signupCount)+'</button>':'');
   tabs.querySelectorAll('[data-community-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.communityTab));
  }
  function helperUnread(){return helperRows.filter(t=>t.author_id!==owner&&!helperRead.has(t.id)).length;}
@@ -38,14 +38,25 @@
   catch{if(seq===generation){helperError='Nie udało się odświeżyć próśb. Spróbuję ponownie.';if(opened()&&tab==='helper')renderHelper();}}
   finally{if(seq===generation)helperBusy=false;}
  }
+ function renderSignups(){
+  signupPane.innerHTML=!signupAdmin?'<p>Powiadomienia o kontach są dostępne administratorom.</p>':'<h3>👤 Nowe konta w EduLidze</h3><p class="community-note">Nowe rejestracje od wersji 0.74. Odczyt zapisujemy osobno dla każdego administratora.</p>'+(signupError?'<p role="status">'+esc(signupError)+'</p>':'')+(signupRows.length?signupRows.map(row=>'<article class="signup-notification '+(!row.is_read?'unread':'')+'"><span aria-hidden="true">👋</span><div><b>'+esc(row.display_name)+'</b><p>Utworzono nowe konto</p><time datetime="'+esc(row.created_at)+'">'+new Date(row.created_at).toLocaleString('pl-PL',{dateStyle:'medium',timeStyle:'short'})+'</time></div></article>').join(''):'<p>Gdy zarejestruje się nowy użytkownik, jego powiadomienie pojawi się tutaj — także po Twoim powrocie do aplikacji.</p>');
+ }
+ async function loadSignups(){
+  if(signupBusy||!owner||!client()||document.hidden)return;signupBusy=true;const account=owner,seq=generation;
+  try{const {data:result,error}=await client().rpc('get_admin_signup_notifications');if(account!==owner||seq!==generation)return;if(error)throw error;signupAdmin=result?.admin===true;signupRows=signupAdmin&&Array.isArray(result.items)?result.items:[];signupCount=signupAdmin?Math.max(0,Number(result.unread)||0):0;signupError='';
+   if(opened()&&tab==='signups'){renderSignups();const ids=signupRows.filter(r=>!r.is_read).map(r=>r.id);if(signupAdmin&&ids.length){const marked=await client().rpc('read_admin_signup_notifications',{p_ids:ids});if(account!==owner||seq!==generation)return;if(marked.error)throw marked.error;signupCount=Math.max(0,Number(marked.data)||0);for(const r of signupRows)if(ids.includes(r.id))r.is_read=true;}}
+   paintIcon();
+  }catch{if(seq===generation){signupError='Nie udało się odświeżyć rejestracji. Spróbuję ponownie.';if(opened()&&tab==='signups')renderSignups();}}
+  finally{if(seq===generation)signupBusy=false;}
+ }
  function rememberDraft(){const input=privatePane.querySelector('textarea');if(input&&peer)drafts.set(owner+':'+(input.dataset.peer||peer),input.value);}
  function setOpen(value){
   if(!value)rememberDraft();document.body.classList.toggle('mobile-chat-open',value);
-  if(value){void loadInbox();void loadHelper();if(tab==='suggestions')window.EduSuggestions?.open();if(tab==='helper')renderHelper(true);if(tab==='common'){commonUnread=0;void window.refreshClassChatMessages?.();setTimeout(()=>{const box=document.getElementById('chat-messages');box.scrollTop=box.scrollHeight;},80);}if(tab==='private'&&peer)void loadThread();}
+  if(value){void loadInbox();void loadHelper();void loadSignups();if(tab==='suggestions')window.EduSuggestions?.open();if(tab==='helper')renderHelper(true);if(tab==='common'){commonUnread=0;void window.refreshClassChatMessages?.();setTimeout(()=>{const box=document.getElementById('chat-messages');box.scrollTop=box.scrollHeight;},80);}if(tab==='private'&&peer)void loadThread();}
   window.setBattleNotificationsOpen?.(value&&tab==='invites');paintIcon();if(!value)fab.focus({preventScroll:true});
  }
  function selectTab(next){
-  rememberDraft();tab=next;if(next==='common'&&opened())commonUnread=0;common.hidden=next!=='common';privatePane.hidden=next!=='private';invitationPane.hidden=next!=='invites';helperPane.hidden=next!=='helper';suggestionPane.hidden=next!=='suggestions';if(next==='suggestions')window.EduSuggestions?.open();if(next==='helper'){renderHelper(opened());void loadHelper();}
+  rememberDraft();tab=next;if(next==='common'&&opened())commonUnread=0;common.hidden=next!=='common';privatePane.hidden=next!=='private';invitationPane.hidden=next!=='invites';helperPane.hidden=next!=='helper';suggestionPane.hidden=next!=='suggestions';signupPane.hidden=next!=='signups';if(next==='signups'){renderSignups();void loadSignups();}if(next==='suggestions')window.EduSuggestions?.open();if(next==='helper'){renderHelper(opened());void loadHelper();}
   window.setBattleNotificationsOpen?.(opened()&&next==='invites');
   if(next==='private'){if(peer)renderThread();else renderPeople();}if(next==='common')void window.refreshClassChatMessages?.();paintIcon();
  }
@@ -98,15 +109,15 @@
  }
  function restart(){
   const next=user()?.id||null;if(next===owner&&(channel||!next))return;
-  rememberDraft();privatePane.replaceChildren();generation++;owner=next;threadVersion++;inbox=[];peer=null;polling=false;commonUnread=0;seen.clear();helperRows=[];helperBusy=false;helperError='';try{helperRead=new Set(JSON.parse(localStorage.getItem('eduliga-helper-read:'+owner)||'[]'));}catch{helperRead=new Set();}
+  rememberDraft();privatePane.replaceChildren();generation++;owner=next;threadVersion++;inbox=[];peer=null;polling=false;commonUnread=0;seen.clear();helperRows=[];helperBusy=false;helperError='';signupRows=[];signupCount=0;signupAdmin=false;signupBusy=false;signupError='';renderSignups();if(tab==='signups')selectTab('common');try{helperRead=new Set(JSON.parse(localStorage.getItem('eduliga-helper-read:'+owner)||'[]'));}catch{helperRead=new Set();}
   renderHelper(false);if(tab==='private')renderPeople();const old=channel;channel=null;if(old)void client()?.removeChannel(old);paintIcon();
   if(!owner||!client())return;
   const seq=generation;channel=client().channel('private-inbox:'+owner);
   const changed=()=>{if(seq!==generation)return;void loadInbox();if(opened()&&peer)void loadThread();};
   channel.on('postgres_changes',{event:'*',schema:'public',table:'private_chat_messages',filter:'recipient_id=eq.'+owner},changed).on('postgres_changes',{event:'*',schema:'public',table:'private_chat_messages',filter:'sender_id=eq.'+owner},changed).subscribe(status=>{if(status==='SUBSCRIBED')changed();});
-  void loadInbox();void loadHelper();
+  void loadInbox();void loadHelper();void loadSignups();
  }
- fab.onclick=()=>{if(!opened()&&(invites.length||window.EduSuggestions?.count()||helperUnread()||unread()||commonUnread)){tab=invites.length?'invites':window.EduSuggestions?.count()?'suggestions':helperUnread()?'helper':unread()?'private':'common';peer=null;selectTab(tab);}setOpen(!opened());};
+ fab.onclick=()=>{if(!opened()&&(invites.length||signupCount||window.EduSuggestions?.count()||helperUnread()||unread()||commonUnread)){tab=invites.length?'invites':signupCount?'signups':window.EduSuggestions?.count()?'suggestions':helperUnread()?'helper':unread()?'private':'common';peer=null;selectTab(tab);}setOpen(!opened());};
  header.querySelector('.mobile-chat-close').onclick=()=>setOpen(false);
  window.addEventListener('eduliga-invitations',event=>{
   invites=event.detail.invitations||[];paintIcon();
@@ -115,7 +126,7 @@
  window.addEventListener('eduliga-common-message',event=>{if(event.detail?.sender_id!==owner&&!(opened()&&tab==='common'))commonUnread++;paintIcon();});window.addEventListener('ortoliga-auth-change',restart);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){restart();void loadInbox();}});
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&opened())setOpen(false);});
- setInterval(()=>{restart();void loadInbox();void loadHelper();},5000);
+ setInterval(()=>{restart();void loadInbox();void loadHelper();void loadSignups();},5000);
  window.addEventListener('eduliga-helper-posted',()=>void loadHelper());
  new MutationObserver(paintIcon).observe(document.body,{attributes:true,attributeFilter:['class']});
  window.EduSuggestions?.mount(suggestionPane,paintIcon);setInterval(()=>void window.EduSuggestions?.load(),15000);invites=window.getBattleInvitations?.()||[];selectTab('common');restart();

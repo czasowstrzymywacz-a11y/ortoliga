@@ -192,7 +192,7 @@ initManualTranscription = () => {
 };
 hintForManualToken = t => {
   const item=league.lookup(t.word),g=item?.group||'Inne słowa';
-  return `<div class="manual-learning-hint"><b>🧠 ${esc(g)}</b><span>${esc(item?.rule||'Porównaj zapis liter po kolei.')}</span><span><b>Zapamiętaj:</b> ${esc(item?.mnemonic||league.mnemonic(t.word,g))}</span><span class="manual-mnemonic">Zakryj wzór, powiedz wyraz i spróbuj zapisać go z pamięci po zakończeniu dyktanda.</span></div>`;
+  return `<details class="learning-why" onclick="event.stopPropagation()"><summary>💡 Dlaczego tak?</summary><div class="manual-learning-hint"><b>🧠 ${esc(g)}</b><span>${esc(item?.rule||'Porównaj zapis liter po kolei.')}</span><span><b>Zapamiętaj:</b> ${esc(item?.mnemonic||league.mnemonic(t.word,g))}</span><span class="manual-mnemonic">Zakryj wzór, powiedz wyraz i spróbuj zapisać go z pamięci po zakończeniu dyktanda.</span></div></details>`;
 };
 function manualCard(i){
   const t=manualTokens[i],picked=t.picked!==null||t.missing,spellOK=!t.missing&&OrtoLigaCore.lower(t.picked)===OrtoLigaCore.lower(t.word),capOK=!!manualDisplay(t)&&OrtoLigaCore.upper(manualDisplay(t))===OrtoLigaCore.upper(t.word),expected=OrtoLigaCore.tokens(currentText.sentences.join(' ')),punctOK=manualBoundaries[i+1]===expected.gaps[i+1]&&(i!==0||manualBoundaries[0]===expected.gaps[0]),allOK=spellOK&&capOK&&punctOK;

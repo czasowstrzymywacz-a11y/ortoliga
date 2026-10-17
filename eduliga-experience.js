@@ -1,5 +1,6 @@
 /* Small, shared learning affordances: celebrations, task help and real progress charts. */
 (() => {
+ window.learningWhy=text=>'<details class="learning-why"><summary>💡 Dlaczego tak?</summary><p>'+LeagueApp.esc(text)+'</p></details>';
  let lastPoint=null;
  document.addEventListener('pointerdown',e=>lastPoint={x:e.clientX,y:e.clientY,at:Date.now()},true);
  window.celebrateAnswer=node=>{

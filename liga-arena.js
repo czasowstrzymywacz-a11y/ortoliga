@@ -39,7 +39,7 @@
  }
  function lobby(key){
   const node=document.getElementById(boards[key]);if(!node)return;if(room?.league===key){render();return;}
-  node.innerHTML='<h2>⚔️ Bitwa · '+A.esc(A.configs[key].name)+'</h2><p>10 rund, 30 sekund na rundę. Start z drugim graczem, kolejni mogą dołączyć w trakcie.</p><p>Poprawna odpowiedź: 1. miejsce 20, 2. 15, 3. 10, kolejne 5 '+A.configs[key].unit+'. Pierwszy dostaje bonus za czas do 20 punktów. „Nie wiem” lub brak odpowiedzi: −5 punktów.</p><button class="primary" onclick="joinLeagueBattle(\''+key+'\')">'+(uid()?'Wejdź jako '+A.esc(name()):'Zaloguj się i wejdź')+' →</button><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+key+'\')">👥 Zaproś</button><div class="arena-status" role="status"></div>';
+  node.innerHTML='<h2>⚔️ Bitwa · '+A.esc(A.configs[key].name)+'</h2><p>10 rund, 30 sekund na rundę. Start z drugim graczem, kolejni mogą dołączyć w trakcie.</p><p>Poprawna odpowiedź: +10 za każdego pokonanego rywala; bez pokonanych +5 '+A.configs[key].unit+'. Pierwszy dostaje bonus równy pełnym sekundom przewagi nad najwolniejszym graczem. „Nie wiem” lub brak odpowiedzi: −5 punktów.</p><button class="primary" onclick="joinLeagueBattle(\''+key+'\')">'+(uid()?'Wejdź jako '+A.esc(name()):'Zaloguj się i wejdź')+' →</button><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+key+'\')">👥 Zaproś</button><div class="arena-status" role="status"></div>';
  }
  function state(){return {league:room.league,phase:room.phase,match:room.match,round:room.round,task:room.task,startAt:room.startAt,roster:room.roster,answers:room.answers,results:room.results,scores:room.scores,names:room.names,starts:room.starts,revision:room.revision};}
  function presenceChanged(ch,owner){
@@ -62,7 +62,7 @@ const players={};
   if(!A.configs[key])return;if(!uid()){openSyncDialog();return;}
   if(!syncReady){lobby(key);document.querySelector('#'+boards[key]+' .arena-status').textContent='Pobieram Twoje postępy. Spróbuj za chwilę.';return;}
   if(room?.league===key&&room.owner===uid())return;leave();
-  const owner=uid(),ch=window.ortoligaSyncClient.channel('liga-v063-'+key+'-'+(window.learningTopic?.(key)||'part1'),{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
+  const owner=uid(),ch=window.ortoligaSyncClient.channel('liga-v069-'+key+'-'+(window.learningTopic?.(key)||'part1'),{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
   room={league:key,owner,joined:Date.now(),players:{},host:null,connected:false,phase:'lobby',match:null,round:0,task:null,startAt:0,roster:[],answers:{},results:{},scores:{},names:{},starts:{},revision:0,answered:false,localAnswer:null,clockOffset:0};
   const active=()=>channel===ch&&room?.owner===owner&&uid()===owner;
   ch.on('presence',{event:'sync'},()=>{if(active())presenceChanged(ch,owner);
@@ -97,6 +97,7 @@ const players={};
    if(same&&room.phase==='question'&&root()?.querySelector('.arena-form'))renderProgress();else render();return;
   }
   if(p.kind==='answer'&&room.host===uid()&&room.phase==='question'&&p.match===room.match&&p.round===room.round&&room.roster.includes(p.sender)&&!room.answers[p.sender]){
+   if(Date.now()>=room.startAt+30000){settle();return;}
    room.answers[p.sender]={answers:Array.isArray(p.answers)?p.answers.map(a=>String(a).slice(0,160)):[],elapsed:Math.max(0,Math.min(30000,Date.now()-(room.starts[p.sender]||room.startAt))),skipped:!!p.skipped};room.revision++;
    if(room.roster.every(id=>room.answers[id]||!room.players[id]))settle();else {emit({kind:'state',state:state()});renderProgress();}
   }
@@ -108,7 +109,7 @@ const players={};
  function answer(answers,skipped=false){
   if(!room||room.phase!=='question'||room.answered||!room.roster.includes(uid())||Date.now()<(room.starts[uid()]||room.startAt)+offset())return;
   room.answered=true;const correct=correctness(room.league,room.task,answers),node=root()?.querySelector('.arena-feedback');
-  if(node)node.innerHTML=skipped?'<p class="answer-feedback bad">Poprawnie: <b>'+room.task.wants.map(A.esc).join(' · ')+'</b> · −5 pkt.</p>':correct.every(Boolean)?'<p class="answer-feedback good">✓ Brawo! Punkty pojawią się po rundzie.</p>':'<p class="answer-feedback bad">Poprawnie: <b>'+room.task.wants.map(A.esc).join(' · ')+'</b> · −5 za każde błędne pole.</p>';
+  if(node)node.innerHTML=skipped?'<p class="answer-feedback bad">Poprawnie: <b>'+room.task.wants.map(A.esc).join(' · ')+'</b> · −5 pkt.</p>':correct.every(Boolean)?'<p class="answer-feedback good">✓ Brawo! Punkty pojawią się po rundzie.</p>':'<p class="answer-feedback bad">Poprawnie: <b>'+room.task.wants.map(A.esc).join(' · ')+'</b> · −5 punktów za błędną odpowiedź.</p>';
   correct.forEach((ok,i)=>{if(ok)window.celebrateAnswer?.(document.getElementById('arena-answer-'+i)||node);});
   root()?.querySelectorAll('.arena-answer,.arena-choice,.arena-skip,button[type=submit]').forEach(x=>x.disabled=true);
   const payload={kind:'answer',match:room.match,round:room.round,answers,skipped,sender:uid()};room.localAnswer=payload;emit(payload);if(room.host===uid())receive(payload);
@@ -116,8 +117,17 @@ const players={};
  function settle(){
   if(!room||room.host!==uid()||room.phase!=='question')return;clearTimeout(timer);
   const rows=room.roster.map(id=>{const a=room.answers[id]||{answers:[],elapsed:30000,skipped:true};return {id,name:room.names[id]||'Zawodnik',...a,correct:correctness(room.league,room.task,a.answers)};});
-  const ranked=rows.filter(r=>r.correct.some(Boolean)).sort((a,b)=>a.elapsed-b.elapsed||a.id.localeCompare(b.id));
-  const summary=rows.map(r=>{const place=ranked.findIndex(x=>x.id===r.id),bonus=place===0&&ranked.length>1?Math.max(0,Math.min(20,Math.round((ranked[1].elapsed-r.elapsed)/1000))):0,hits=r.correct.filter(Boolean).length,points=r.skipped?-5:hits*(place<0?0:[20,15,10][place]||5)+bonus-(r.correct.length-hits)*5;room.scores[r.id]=(room.scores[r.id]||0)+points;return {...r,place:place<0?null:place+1,bonus,points};});
+  const ranked=rows.filter(r=>!r.skipped&&r.correct.length>0&&r.correct.every(Boolean)).sort((a,b)=>a.elapsed-b.elapsed||a.id.localeCompare(b.id));
+  const slowest=Math.max(0,...rows.map(r=>r.elapsed));
+  const summary=rows.map(r=>{
+   const valid=!r.skipped&&r.correct.length>0&&r.correct.every(Boolean);
+   const defeated=valid?rows.filter(other=>other.id!==r.id&&(other.skipped||!other.correct.every(Boolean)||other.elapsed>r.elapsed)).length:0;
+   const place=valid?1+ranked.filter(other=>other.elapsed<r.elapsed).length:null;
+   const soleFirst=valid&&place===1&&ranked.filter(other=>other.elapsed===r.elapsed).length===1;
+   const bonus=soleFirst?Math.max(0,Math.min(30,Math.floor((slowest-r.elapsed)/1000))):0;
+   const points=valid?(defeated?defeated*10:5)+bonus:-5;
+   room.scores[r.id]=(room.scores[r.id]||0)+points;return {...r,place,defeated,bonus,points};
+  });
   room.results[room.round]=summary;room.phase='results';room.revision++;emit({kind:'state',state:state()});award();render();
  }
  function award(){

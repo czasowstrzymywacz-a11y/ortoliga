@@ -158,3 +158,11 @@ Logowanie pseudonimem na osobnym koncie testowym zakończyło się HTTP 200, z z
 W 0.68 główny setSyncUser pobiera bieżący profil Auth również przy zdarzeniach odtworzenia starej sesji. Stare metadane z otwartej wcześniej karty nie powinny przywracać nazwy Filip. Konfiguracja SMTP nadal wymaga osobnej pracy.
 
 Potwierdzenie końcowe 17.10.2026: UI 0.68 pokazuje admin po odtworzeniu sesji, punkty i prawa administratora zachowane. Zatwierdzone konto testowe usunięto; kontrola auth.users, student_profiles, student_progress i student_name_claims zwróciła 0/0/0/0. Test formularza potwierdził komunikat zajętej nazwy, brak rejestracji przy niedostępności sprawdzania i poprawne rozpoznanie konfliktu równoczesnych prób. Hasło usuniętego konta testowego nie jest potrzebne i lokalny plik prywatny usunięto.
+
+## 0.69 — fiszki, prośby Pomocnika i punktacja bitew
+
+Trzecie formy wszystkich 40 czasowników są lokalnym dodatkiem fiszek w eduliga-topics.js. Nie dodawaj ich do pól ocenianych ani pytań bitwy. Pierwsze formy mają wyraźne kolorowe tła, trzecia szare oznaczenie na później. Lektor odkrytej fiszki czyta wszystkie trzy.
+
+Czat pobiera maksymalnie 50 ostatnich nierozwiązanych i nieusuniętych pytań helper_topics, pod istniejącym RLS, co 5 sekund przy aktywnej stronie. Znaczniki odczytu są lokalne dla UUID użytkownika, bez zmiany schematu. Własne pytania nie liczą się jako nowe. Ikona pokazuje oddzielne graficzne znaczniki dla wiadomości, bitew i pomocy; zakładka Pomocnika prowadzi do konkretnego wątku. Publicznie niezalogowani nie pobierają próśb. Nie stosuj publicznego kanału broadcast do treści pytań.
+
+Nowa punktacja dotyczy całej odpowiedzi w rundzie. Poprawna pokonuje wszystkich błędnych/pominiętych i wolniejsze poprawne odpowiedzi. +10 za każdego pokonanego, poprawna bez pokonanych +5, błąd/pominięcie/timeout −5. Remis czasu nie pokonuje zremisowanego. Bonus tylko przy jednym najszybszym poprawnym graczu: floor((najwolniejszy czas wszystkich − jego czas)/1000), maksymalnie 30. Timeout liczy się jako 30 s. Pakiety po terminie są odrzucane. Zakończenie rundy pozostaje automatyczne po odpowiedziach wszystkich aktywnych uczestników albo po 30 s. Kanały bitew liga-v069 oddzielają nowe zasady od wcześniej otwartych kart v063. Gra nadal używa prowadzącego klienta, nie serwerowego autorytetu czasu i punktacji.

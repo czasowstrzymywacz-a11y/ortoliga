@@ -3,6 +3,7 @@
  const A=LeagueApp,boards={ortho:'arena-ortho',english:'arena-english',spanish:'arena-spanish'};
  let room=null,channel=null,timer=null,stateTimer=null,tickTimer=null,lastSpoken=null;
  const uid=()=>A.user()?.id,name=()=>A.user()?.user_metadata?.display_name||'Zawodnik';
+ const roundLimit=(key=room?.league)=>key==='english'&&(room?.league===key?room.topic:window.learningTopic?.(key))==='tenses'?90000:30000;
  const shuffle=list=>[...list].sort(()=>Math.random()-.5);
  function orthoTasks(){
   const extra=[{word:'historii',example:'Opowiadamy o historii miasta.'},{word:'lekcji',example:'Po lekcji wracamy do domu.'},{word:'nadziei',example:'Nie tracimy nadziei.'}];
@@ -41,7 +42,7 @@
  }
  function lobby(key){
   const node=document.getElementById(boards[key]);if(!node)return;if(room?.league===key){render();return;}
-  node.innerHTML='<h2>⚔️ Bitwa · '+A.esc(A.configs[key].name)+'</h2><p>10 rund, 30 sekund na rundę. Start z drugim graczem, kolejni mogą dołączyć w trakcie.</p><p>Poprawna odpowiedź: +10 za każdego pokonanego rywala; bez pokonanych +5 '+A.configs[key].unit+'. Pierwszy dostaje bonus równy pełnym sekundom przewagi nad najwolniejszym graczem. „Nie wiem” lub brak odpowiedzi: −5 punktów.</p><button class="primary" onclick="joinLeagueBattle(\''+key+'\')">'+(uid()?'Wejdź jako '+A.esc(name()):'Zaloguj się i wejdź')+' →</button><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+key+'\')">👥 Zaproś</button><div class="arena-status" role="status"></div>';
+  node.innerHTML='<h2>⚔️ Bitwa · '+A.esc(A.configs[key].name)+'</h2><p>10 rund, '+(roundLimit(key)/1000)+' sekund na rundę. Start z drugim graczem, kolejni mogą dołączyć w trakcie.</p><p>Poprawna odpowiedź: +10 za każdego pokonanego rywala; bez pokonanych +5 '+A.configs[key].unit+'. Pierwszy dostaje bonus równy pełnym sekundom przewagi nad najwolniejszym graczem. „Nie wiem” lub brak odpowiedzi: −5 punktów.</p><button class="primary" onclick="joinLeagueBattle(\''+key+'\')">'+(uid()?'Wejdź jako '+A.esc(name()):'Zaloguj się i wejdź')+' →</button><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+key+'\')">👥 Zaproś</button><div class="arena-status" role="status"></div>';
  }
  function state(){return {league:room.league,phase:room.phase,match:room.match,round:room.round,task:room.task,startAt:room.startAt,roster:room.roster,answers:room.answers,results:room.results,scores:room.scores,names:room.names,starts:room.starts,revision:room.revision};}
  function presenceChanged(ch,owner){
@@ -53,7 +54,7 @@ const players={};
    if(room.phase==='lobby'&&room.host===owner&&Object.keys(players).length>=2)next();
    if(room.host===owner&&room.phase==='question'){
     const newcomers=Object.keys(players).filter(id=>!room.roster.includes(id));
-    if(newcomers.length&&room.startAt+30000-Date.now()>5000){for(const id of newcomers){room.roster.push(id);room.starts[id]=Date.now()+500;room.scores[id]??=0;}room.revision++;emit({kind:'state',state:state()});}
+    if(newcomers.length&&room.startAt+roundLimit()-Date.now()>5000){for(const id of newcomers){room.roster.push(id);room.starts[id]=Date.now()+500;room.scores[id]??=0;}room.revision++;emit({kind:'state',state:state()});}
     schedule();if(room.roster.every(id=>room.answers[id]||!players[id]))settle();
    }
    if(room.host!==owner)emit({kind:'state-request'});
@@ -64,8 +65,8 @@ const players={};
   if(!A.configs[key])return;if(!uid()){openSyncDialog();return;}
   if(!syncReady){lobby(key);document.querySelector('#'+boards[key]+' .arena-status').textContent='Pobieram Twoje postępy. Spróbuj za chwilę.';return;}
   if(room?.league===key&&room.owner===uid())return;leave();
-  const owner=uid(),ch=window.ortoligaSyncClient.channel('liga-v069-'+key+'-'+(window.learningTopic?.(key)||'part1'),{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
-  room={league:key,owner,joined:Date.now(),players:{},host:null,connected:false,phase:'lobby',match:null,round:0,task:null,startAt:0,roster:[],answers:{},results:{},scores:{},names:{},starts:{},revision:0,answered:false,localAnswer:null,clockOffset:0};
+  const owner=uid(),topic=window.learningTopic?.(key)||'part1',protocol=key==='english'&&topic==='tenses'?'liga-v073-':'liga-v069-',ch=window.ortoligaSyncClient.channel(protocol+key+'-'+topic,{config:{presence:{key:owner},broadcast:{ack:true}}});channel=ch;
+  room={league:key,topic,owner,joined:Date.now(),players:{},host:null,connected:false,phase:'lobby',match:null,round:0,task:null,startAt:0,roster:[],answers:{},results:{},scores:{},names:{},starts:{},revision:0,answered:false,localAnswer:null,clockOffset:0};
   const active=()=>channel===ch&&room?.owner===owner&&uid()===owner;
   ch.on('presence',{event:'sync'},()=>{if(active())presenceChanged(ch,owner);
   }).on('broadcast',{event:'arena'},({payload})=>{if(active())receive(payload);}).subscribe(async status=>{
@@ -99,14 +100,14 @@ const players={};
    if(same&&room.phase==='question'&&root()?.querySelector('.arena-form'))renderProgress();else render();return;
   }
   if(p.kind==='answer'&&room.host===uid()&&room.phase==='question'&&p.match===room.match&&p.round===room.round&&room.roster.includes(p.sender)&&!room.answers[p.sender]){
-   if(Date.now()>=room.startAt+30000){settle();return;}
-   room.answers[p.sender]={answers:Array.isArray(p.answers)?p.answers.map(a=>String(a).slice(0,160)):[],elapsed:Math.max(0,Math.min(30000,Date.now()-(room.starts[p.sender]||room.startAt))),skipped:!!p.skipped};room.revision++;
+   if(Date.now()>=room.startAt+roundLimit()){settle();return;}
+   room.answers[p.sender]={answers:Array.isArray(p.answers)?p.answers.map(a=>String(a).slice(0,160)):[],elapsed:Math.max(0,Math.min(roundLimit(),Date.now()-(room.starts[p.sender]||room.startAt))),skipped:!!p.skipped};room.revision++;
    if(room.roster.every(id=>room.answers[id]||!room.players[id]))settle();else {emit({kind:'state',state:state()});renderProgress();}
   }
  }
  function schedule(){
   clearTimeout(timer);if(!room||room.phase!=='question')return;
-  timer=setTimeout(()=>{if(!room||room.phase!=='question')return;if(room.host===uid())settle();else if(room.roster.includes(uid())&&!room.answered)answer([],true);},Math.max(0,room.startAt+30000+offset()-Date.now()));
+  timer=setTimeout(()=>{if(!room||room.phase!=='question')return;if(room.host===uid())settle();else if(room.roster.includes(uid())&&!room.answered)answer([],true);},Math.max(0,room.startAt+roundLimit()+offset()-Date.now()));
  }
  function answer(answers,skipped=false){
   if(!room||room.phase!=='question'||room.answered||!room.roster.includes(uid())||Date.now()<(room.starts[uid()]||room.startAt)+offset())return;
@@ -120,7 +121,7 @@ const players={};
  }
  function settle(){
   if(!room||room.host!==uid()||room.phase!=='question')return;clearTimeout(timer);
-  const rows=room.roster.map(id=>{const a=room.answers[id]||{answers:[],elapsed:30000,skipped:true};return {id,name:room.names[id]||'Zawodnik',...a,correct:correctness(room.league,room.task,a.answers)};});
+  const rows=room.roster.map(id=>{const a=room.answers[id]||{answers:[],elapsed:roundLimit(),skipped:true};return {id,name:room.names[id]||'Zawodnik',...a,correct:correctness(room.league,room.task,a.answers)};});
   const ranked=rows.filter(r=>!r.skipped&&r.correct.length>0&&r.correct.every(Boolean)).sort((a,b)=>a.elapsed-b.elapsed||a.id.localeCompare(b.id));
   const slowest=Math.max(0,...rows.map(r=>r.elapsed));
   const summary=rows.map(r=>{
@@ -128,7 +129,7 @@ const players={};
    const defeated=valid?rows.filter(other=>other.id!==r.id&&(other.skipped||!other.correct.every(Boolean)||other.elapsed>r.elapsed)).length:0;
    const place=valid?1+ranked.filter(other=>other.elapsed<r.elapsed).length:null;
    const soleFirst=valid&&place===1&&ranked.filter(other=>other.elapsed===r.elapsed).length===1;
-   const bonus=soleFirst?Math.max(0,Math.min(30,Math.floor((slowest-r.elapsed)/1000))):0;
+   const bonus=soleFirst?Math.max(0,Math.min(roundLimit()/1000,Math.floor((slowest-r.elapsed)/1000))):0;
    const points=valid?(defeated?defeated*10:5)+bonus:-5;
    room.scores[r.id]=(room.scores[r.id]||0)+points;return {...r,place,defeated,bonus,points};
   });
@@ -152,8 +153,8 @@ const players={};
  function tick(){
   if(!room||room.phase!=='question')return;
   const clock=root()?.querySelector('.arena-countdown');if(!clock)return;
-  const seconds=Math.max(0,Math.min(30,Math.ceil((room.startAt+30000+offset()-Date.now())/1000)));
-  clock.querySelector('strong').textContent=seconds+' s';clock.style.setProperty('--remaining',seconds/30*100+'%');clock.classList.toggle('urgent',seconds<=5);clock.setAttribute('aria-label','Pozostało '+seconds+' sekund');
+  const seconds=Math.max(0,Math.min(roundLimit()/1000,Math.ceil((room.startAt+roundLimit()+offset()-Date.now())/1000)));
+  clock.querySelector('strong').textContent=seconds+' s';clock.style.setProperty('--remaining',seconds/(roundLimit()/1000)*100+'%');clock.classList.toggle('urgent',seconds<=5);clock.setAttribute('aria-label','Pozostało '+seconds+' sekund');
  }
  function readSentence(){if(room?.league==='ortho'&&room.task)A.speech(room.task.sentence,'pl-PL');}
  function renderProgress(){
@@ -170,7 +171,7 @@ const players={};
     const t=room.task,disabled=room.answered?'disabled':'';
     const prompt=room.league==='english'?englishBoard(t):'<div class="arena-prompt"><small>'+(room.league==='ortho'?'Wybierz zapis do luki':'Polski → Hiszpański')+'</small>'+(room.league==='ortho'?'<p class="arena-sentence">'+A.esc(t.context)+'</p><h2>'+A.esc(t.prompt)+'</h2><button type="button" class="secondary" onclick="readBattleSentence()">🔊 Całe zdanie</button>':'<h2>'+A.esc(t.prompt)+'</h2>')+'</div>';
     const controls=t.options?'<div class="arena-options">'+shuffle(t.options).map(x=>'<button type="button" class="arena-choice" data-arena-option="'+A.esc(x)+'" '+disabled+'>'+A.esc(x)+'</button>').join('')+'</div>':room.league==='english'?'':'<div class="arena-inputs"><label>Hiszpański<input id="arena-answer-0" class="arena-answer" required autocomplete="off" autocapitalize="none" spellcheck="false" '+disabled+'></label></div>'+window.spanishKeyboard('arena-answer-0');
-    content='<p class="arena-progress">Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length+'</p><div class="arena-countdown" role="timer" aria-live="off"><span>Do końca rundy</span><strong>30 s</strong><i></i></div><form class="arena-form">'+prompt+controls+(t.options?'':'<button class="primary" type="submit" '+disabled+'>Odpowiadam →</button>')+'<button type="button" class="secondary arena-skip" onclick="skipLeagueBattleAnswer()" '+disabled+'>Nie wiem →</button><div class="arena-feedback" aria-live="polite">'+(room.answered?'<p>Odpowiedź zapisana. Czekamy na zakończenie rundy.</p>':'')+'</div></form>';
+    content='<p class="arena-progress">Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length+'</p><div class="arena-countdown" role="timer" aria-live="off"><span>Do końca rundy</span><strong>'+(roundLimit()/1000)+' s</strong><i></i></div><form class="arena-form">'+prompt+controls+(t.options?'':'<button class="primary" type="submit" '+disabled+'>Odpowiadam →</button>')+'<button type="button" class="secondary arena-skip" onclick="skipLeagueBattleAnswer()" '+disabled+'>Nie wiem →</button><div class="arena-feedback" aria-live="polite">'+(room.answered?'<p>Odpowiedź zapisana. Czekamy na zakończenie rundy.</p>':'')+'</div></form>';
    }
   }
   if(room.phase==='results'){

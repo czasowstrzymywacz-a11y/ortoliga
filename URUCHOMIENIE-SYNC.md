@@ -182,3 +182,7 @@ Pełne i skrócone formy w module czasów są pokazywane razem w odpowiedziach t
 ## Wydanie 0.72
 
 Każde sprawdzone zadanie czasów otrzymuje objaśnienie konstrukcji (twierdzenie / pytanie / przeczenie), odmiany be, operatorów, końcówek i określeń czasu. W arenie objaśnienie jest też w wynikach rundy, również po braku odpowiedzi. Wskazówka (np. not / be) została przeniesiona do kolorowego oznaczenia tuż przed polem. Prawidłowe They are not / aren’t at home on Mondays pozostaje w bazie; nie zmieniamy go na don’t be. Brak migracji.
+
+## Wydanie 0.73
+
+Menu zadań obu lig językowych jest ukrywane przed wyborem działu oraz na ekranie kafelków zakresu, także po powrocie przez Zmień dział. Przyciski lig i powrót do strony głównej pozostają dostępne. Bitwa angielskich czasów ma limit 90 sekund, inne działy 30; wspólna funkcja ustala odliczanie, termin odpowiedzi, czas przy braku odpowiedzi i limit bonusu lidera. Nowy kanał liga-v073-english-tenses izoluje graczy od starszych kart z limitem 30 s; potrzebne odświeżenie. Brak migracji.

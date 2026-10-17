@@ -178,3 +178,7 @@ Nowa punktacja dotyczy całej odpowiedzi w rundzie. Poprawna pokonuje wszystkich
 
 Nieregularne mają jeden kafelek i wspólny wybór części w stylu modułu czasów. Pola części 1 / 2 można łączyć; przynajmniej jedno pozostaje zaznaczone. Domyślnie obie części. Wybór steruje istniejącym selectEnglishVocabulary, fiszkami, postępami i kanałem bitwy (part1 / part2 / all). Przy zmianie opuszczamy poprzedni pokój i resetujemy serię, bez kasowania punktów. Zachowano obsługę starych identyfikatorów zaproszeń. Brak migracji bazy.
 Pełne i skrócone formy w module czasów są pokazywane razem w odpowiedziach treningu i areny oraz przy przykładach fiszek. Pary znaczą to samo; ocena nadal akceptuje oba warianty.
+
+## Wydanie 0.72
+
+Każde sprawdzone zadanie czasów otrzymuje objaśnienie konstrukcji (twierdzenie / pytanie / przeczenie), odmiany be, operatorów, końcówek i określeń czasu. W arenie objaśnienie jest też w wynikach rundy, również po braku odpowiedzi. Wskazówka (np. not / be) została przeniesiona do kolorowego oznaczenia tuż przed polem. Prawidłowe They are not / aren’t at home on Mondays pozostaje w bazie; nie zmieniamy go na don’t be. Brak migracji.

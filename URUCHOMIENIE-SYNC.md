@@ -173,3 +173,8 @@ Nowa punktacja dotyczy całej odpowiedzi w rundzie. Poprawna pokonuje wszystkich
 - Bitwa czasów losuje z całej bazy trzech czasów, korzysta z istniejących rund 30 s / 10 rund i punktacji za rywali; osobny kanał `tenses`. Nowy temat zaproszenia przenosi do odpowiedniego pokoju. Nieregularne zachowują pytania o dwie formy.
 - Prywatne pomysły w centrum czatu: autor widzi swoje wpisy, istniejący administratorzy wszystkie i licznik nieobejrzanych. Jedno zdjęcie JPG/PNG/WebP (do 15 MB przed zmniejszeniem; JPG do 6 MB po), prywatny bucket suggestion-images, link 5 minut, status obejrzenia przez admina. Brak e-maili i punktów za pomysły. Odświeżanie co 15 sekund, ochrona szkiców.
 - Migracja `202610170004_suggestions_and_tenses.sql` wdrożona do istniejącego projektu przez SQL Editor przed publikacją aplikacji; potwierdzenie Success. RLS ogranicza odczyt treści i zdjęć do autora i administratorów, zapis wyłącznie RPC z limitem 30 sekund. Nie zmieniono uprawnień do istniejących wiadomości.
+
+## Wydanie 0.71
+
+Nieregularne mają jeden kafelek i wspólny wybór części w stylu modułu czasów. Pola części 1 / 2 można łączyć; przynajmniej jedno pozostaje zaznaczone. Domyślnie obie części. Wybór steruje istniejącym selectEnglishVocabulary, fiszkami, postępami i kanałem bitwy (part1 / part2 / all). Przy zmianie opuszczamy poprzedni pokój i resetujemy serię, bez kasowania punktów. Zachowano obsługę starych identyfikatorów zaproszeń. Brak migracji bazy.
+Pełne i skrócone formy w module czasów są pokazywane razem w odpowiedziach treningu i areny oraz przy przykładach fiszek. Pary znaczą to samo; ocena nadal akceptuje oba warianty.

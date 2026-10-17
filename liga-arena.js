@@ -18,6 +18,7 @@
  function validTask(key,t){
   if(!t)return null;if(key==='ortho')return ortho.find(x=>x.id===t.id)||null;
   if(key==='spanish'){const w=SPANISH_WORDS.find(w=>w.id===t.id);return w?{id:w.id,word:w.id,prompt:w.pl,wants:[w.es]}:null;}
+  if(window.learningTopic?.('english')==='tenses')return window.EnglishTenses?.find(t.id)||null;
   const v=window.ENGLISH_VERBS.find(v=>v.id===t.id),m=t.mode;
   if(!v||!['pl-to-pair','base-to-past','past-to-base','en-to-pl'].includes(m))return null;
   return {id:v.id,word:v.id,mode:m,prompt:m==='pl-to-pair'?v.pl:m==='base-to-past'?v.base:m==='past-to-base'?v.past:v.base+' · '+v.past,wants:m==='pl-to-pair'?[v.base,v.past]:m==='base-to-past'?[v.past]:m==='past-to-base'?[v.base]:[v.pl]};
@@ -25,10 +26,11 @@
  function taskFor(key){
   if(key==='ortho')return ortho[Math.floor(Math.random()*ortho.length)];
   if(key==='spanish')return validTask(key,{id:SPANISH_WORDS[Math.floor(Math.random()*SPANISH_WORDS.length)].id});
+  if(window.learningTopic?.('english')==='tenses')return window.EnglishTenses.pick();
   const pool=window.getEnglishVocabulary?.()||window.ENGLISH_VERBS,v=pool[Math.floor(Math.random()*pool.length)],modes=/[\s/()]/.test(v.pl)?['pl-to-pair','base-to-past','past-to-base']:['pl-to-pair','base-to-past','past-to-base','en-to-pl'];
   return validTask(key,{id:v.id,mode:modes[Math.floor(Math.random()*modes.length)]});
  }
- function correctness(key,t,answers){return t.wants.map((want,i)=>key==='spanish'?window.spanishAnswerCorrect(answers[i],want):key==='english'?window.englishAnswerCorrect(answers[i],want,t.mode):answers[i]===want);}
+ function correctness(key,t,answers){return t.wants.map((want,i)=>key==='spanish'?window.spanishAnswerCorrect(answers[i],want):key==='english'?String(t.id).startsWith('tense-')?window.EnglishTenses.correct(answers[i],want):window.englishAnswerCorrect(answers[i],want,t.mode):answers[i]===want);}
  const emit=p=>channel?.send({type:'broadcast',event:'arena',payload:{...p,sender:uid(),sentAt:Date.now()}});
  const root=()=>room?document.getElementById(boards[room.league]):null;
  const offset=()=>room?.host===uid()?0:room?.clockOffset||0;
@@ -137,6 +139,7 @@ const players={};
   else {A.record(room.league,{id,kind:'battle',word:room.task.word,ok:mine.correct.every(Boolean),delta:mine.points});if(room.round===10)A.record(room.league,{id:room.match+':match',kind:'match',win,delta:0});}
  }
  function englishBoard(t){
+  if(String(t.id).startsWith('tense-'))return window.EnglishTenses.board(t,true);
   const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);
   return '<div class="english-prompt"><span>Uzupełnij luki</span><button type="button" class="english-speak" aria-label="Odtwórz podane słowa" onclick="speakEnglishQuestion('+v.id+',\''+t.mode+'\')">🔊</button></div>'+window.englishQuestionBoard(v,t.mode).replace(/class="english-answer /g,'class="arena-answer english-answer ').replace(/data-answer="(\d+)"/g,'id="arena-answer-$1" data-answer="$1"');
  }

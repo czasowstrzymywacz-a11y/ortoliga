@@ -11,19 +11,19 @@
  const privatePane=document.createElement('section');privatePane.className='community-private';privatePane.hidden=true;
  const invitationPane=document.createElement('section');invitationPane.className='community-invitations';invitationPane.hidden=true;
  invitationPane.append(document.getElementById('battle-invite-notifications'));
- const helperPane=document.createElement('section');helperPane.className='community-helper';helperPane.hidden=true;hub.append(tabs,common,privatePane,invitationPane,helperPane);
+ const helperPane=document.createElement('section');helperPane.className='community-helper';helperPane.hidden=true;const suggestionPane=document.createElement('section');suggestionPane.className='community-suggestions';suggestionPane.hidden=true;hub.append(tabs,common,privatePane,invitationPane,helperPane,suggestionPane);
  const opened=()=>document.body.classList.contains('mobile-chat-open');
  function profiles(){return typeof studentRoster==='undefined'?[]:studentRoster;}
  function peerName(id){return profiles().find(p=>p.user_id===id)?.display_name||'Użytkownik';}
  function unread(){return inbox.reduce((sum,x)=>sum+Number(x.unread||0),0);}
  function badge(n){return n?'<b class="inbox-count">'+n+'</b>':'';}
  function paintIcon(){hub.classList.toggle('community-signed-in',!!user());
-  const hn=helperUnread(),n=unread()+commonUnread+invites.length+hn,kind=invites.length?'battle':hn?'helper':unread()+commonUnread?'message':'none';
+  const hn=helperUnread(),sn=window.EduSuggestions?.count()||0,n=unread()+commonUnread+invites.length+hn+sn,kind=invites.length?'battle':sn?'idea':hn?'helper':unread()+commonUnread?'message':'none';
   fab.dataset.noticeKind=kind;fab.classList.toggle('has-notice',n>0);
-  fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
+  fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='idea'?'💡':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(sn?'<em>💡</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
   fab.setAttribute('aria-label',(opened()?'Zamknij':'Otwórz')+' rozmowy i powiadomienia'+(n?' · '+n+' nowych':''));
   fab.setAttribute('aria-expanded',String(opened()));
-  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button>';
+  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'">💡 Pomysły '+badge(sn)+'</button>';
   tabs.querySelectorAll('[data-community-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.communityTab));
  }
  function helperUnread(){return helperRows.filter(t=>t.author_id!==owner&&!helperRead.has(t.id)).length;}
@@ -41,11 +41,11 @@
  function rememberDraft(){const input=privatePane.querySelector('textarea');if(input&&peer)drafts.set(owner+':'+(input.dataset.peer||peer),input.value);}
  function setOpen(value){
   if(!value)rememberDraft();document.body.classList.toggle('mobile-chat-open',value);
-  if(value){void loadInbox();void loadHelper();if(tab==='helper')renderHelper(true);if(tab==='common'){commonUnread=0;void window.refreshClassChatMessages?.();setTimeout(()=>{const box=document.getElementById('chat-messages');box.scrollTop=box.scrollHeight;},80);}if(tab==='private'&&peer)void loadThread();}
+  if(value){void loadInbox();void loadHelper();if(tab==='suggestions')window.EduSuggestions?.open();if(tab==='helper')renderHelper(true);if(tab==='common'){commonUnread=0;void window.refreshClassChatMessages?.();setTimeout(()=>{const box=document.getElementById('chat-messages');box.scrollTop=box.scrollHeight;},80);}if(tab==='private'&&peer)void loadThread();}
   window.setBattleNotificationsOpen?.(value&&tab==='invites');paintIcon();if(!value)fab.focus({preventScroll:true});
  }
  function selectTab(next){
-  rememberDraft();tab=next;if(next==='common'&&opened())commonUnread=0;common.hidden=next!=='common';privatePane.hidden=next!=='private';invitationPane.hidden=next!=='invites';helperPane.hidden=next!=='helper';if(next==='helper'){renderHelper(opened());void loadHelper();}
+  rememberDraft();tab=next;if(next==='common'&&opened())commonUnread=0;common.hidden=next!=='common';privatePane.hidden=next!=='private';invitationPane.hidden=next!=='invites';helperPane.hidden=next!=='helper';suggestionPane.hidden=next!=='suggestions';if(next==='suggestions')window.EduSuggestions?.open();if(next==='helper'){renderHelper(opened());void loadHelper();}
   window.setBattleNotificationsOpen?.(opened()&&next==='invites');
   if(next==='private'){if(peer)renderThread();else renderPeople();}if(next==='common')void window.refreshClassChatMessages?.();paintIcon();
  }
@@ -106,7 +106,7 @@
   channel.on('postgres_changes',{event:'*',schema:'public',table:'private_chat_messages',filter:'recipient_id=eq.'+owner},changed).on('postgres_changes',{event:'*',schema:'public',table:'private_chat_messages',filter:'sender_id=eq.'+owner},changed).subscribe(status=>{if(status==='SUBSCRIBED')changed();});
   void loadInbox();void loadHelper();
  }
- fab.onclick=()=>{if(!opened()&&(invites.length||helperUnread()||unread()||commonUnread)){tab=invites.length?'invites':helperUnread()?'helper':unread()?'private':'common';peer=null;selectTab(tab);}setOpen(!opened());};
+ fab.onclick=()=>{if(!opened()&&(invites.length||window.EduSuggestions?.count()||helperUnread()||unread()||commonUnread)){tab=invites.length?'invites':window.EduSuggestions?.count()?'suggestions':helperUnread()?'helper':unread()?'private':'common';peer=null;selectTab(tab);}setOpen(!opened());};
  header.querySelector('.mobile-chat-close').onclick=()=>setOpen(false);
  window.addEventListener('eduliga-invitations',event=>{
   invites=event.detail.invitations||[];paintIcon();
@@ -118,5 +118,5 @@
  setInterval(()=>{restart();void loadInbox();void loadHelper();},5000);
  window.addEventListener('eduliga-helper-posted',()=>void loadHelper());
  new MutationObserver(paintIcon).observe(document.body,{attributes:true,attributeFilter:['class']});
- invites=window.getBattleInvitations?.()||[];selectTab('common');restart();
+ window.EduSuggestions?.mount(suggestionPane,paintIcon);setInterval(()=>void window.EduSuggestions?.load(),15000);invites=window.getBattleInvitations?.()||[];selectTab('common');restart();
 })();

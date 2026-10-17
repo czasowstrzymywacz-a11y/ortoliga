@@ -6,7 +6,7 @@
   const second=[['fight','fought','walczyć'],['find','found','znajdować'],['fly','flew','latać'],['get','got','dostawać / otrzymywać'],['give','gave','dawać'],['go','went','iść / jechać'],['grow','grew','rosnąć'],['have','had','mieć'],['hear','heard','słyszeć'],['hide','hid','chować / ukrywać'],['hit','hit','uderzać'],['hold','held','trzymać'],['hurt','hurt','ranić / boleć'],['keep','kept','trzymać / zachowywać'],['know','knew','wiedzieć / znać'],['learn','learnt / learned','uczyć się'],['leave','left','opuszczać / wyjeżdżać'],['lie','lay','leżeć'],['lose','lost','gubić / przegrywać']].map(([base,past,pl],i)=>({id:21+i,base,past,pl}));
   ALL_VERBS.push(...second);let VERBS=ALL_VERBS.slice(0,21);
   window.getEnglishVocabulary=()=>VERBS;
-  window.selectEnglishVocabulary=part=>{round=null;VERBS=ALL_VERBS.filter(v=>part==='part2'?v.id>=21:v.id<21);window.ENGLISH_VERBS=ALL_VERBS;resetEnglishPractice();renderEnglishProgress();};
+  window.selectEnglishVocabulary=part=>{round=null;VERBS=ALL_VERBS.filter(v=>part==='all'||part==='tenses'?true:part==='part2'?v.id>=21:v.id<21);window.ENGLISH_VERBS=ALL_VERBS;resetEnglishPractice();renderEnglishProgress();};
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const currentEnglishUser=()=>typeof syncUser!=='undefined'?syncUser:window.ortoligaSyncUser;
   const owner=()=>currentEnglishUser()?.id||'guest';
@@ -146,7 +146,7 @@
     state.arenaResults??=[];
     if(state.arenaResults.some(x=>x.id===result.id))return;
     state.arenaResults.push({id:result.id,points:result.points});
-    const verb=VERBS.find(v=>v.id===result.task.id);
+    const verb=ALL_VERBS.find(v=>v.id===result.task.id)||window.EnglishTenses?.find(result.task.id);
     if(verb)result.correct.forEach((ok,i)=>record(verb,ok,result.answers[i]||'',null));
     addXP(result.points,result.id,"battle",{word:String(result.task.id),correctDelta:result.correct.filter(Boolean).length,wrongDelta:result.correct.filter(x=>!x).length,battleDelta:Number(result.final),winDelta:Number(result.final&&result.win)});
     if(result.final){state.battles++;if(result.win)state.battleWins++;}
@@ -155,6 +155,9 @@
   const originalEnglishTab=englishTab;
   englishTab=tab=>{originalEnglishTab(tab);if(tab==='battle')window.LeagueArena?.renderLobby('english');};
   window.syncEnglishProgressFromAccount=()=>{load();renderEnglishSummary();};
+  window.awardEnglishExercise=(task,ok,points)=>{record(task,ok,'',ok?points:-5);updateAwards();persist();};
+  window.finishEnglishTenseSeries=id=>{if(state.scoreEvents?.some(e=>e.id===id))return;state.rounds++;addXP(0,id,'series',{roundDelta:1});updateAwards();persist();};
+  window.englishTaskStats=id=>state.words[id]||{correct:0,wrong:0};
   window.ensureEnglishBattleRoom=ensureEnglishBattleRoom;
   window.englishQuestionBoard=questionBoard;window.startEnglishRound=startEnglishRound;window.submitEnglishAnswer=submitEnglishAnswer;window.speakEnglishPolish=speakEnglishPolish;window.speakEnglishQuestion=speakEnglishQuestion;window.englishTab=englishTab;window.openEnglishModule=openEnglishModule;window.renderEnglishProgress=renderEnglishProgress;window.resetEnglishPractice=resetEnglishPractice;window.showModulePicker=showModulePicker;window.launchOrthoModule=launchOrthoModule;window.joinEnglishBattle=joinEnglishBattle;window.leaveEnglishBattle=leaveEnglishBattle;window.startBattleRound=startBattleRound;window.requestBattleRound=requestBattleRound;
   load();renderEnglishSummary();updateAuth();setLeagueNavigation('none');document.getElementById('crumb').textContent='Powitanie';

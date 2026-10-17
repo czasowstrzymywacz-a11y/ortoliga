@@ -1,0 +1,36 @@
+/* Private development inbox: authors see their own submissions, admins see all. */
+(() => {
+ const A=LeagueApp,E=A.esc,client=()=>window.ortoligaSyncClient;
+ let pane=null,notify=()=>{},account=null,seq=0,busy=false,admin=false,rows=[],error='',sending=false,dirty=false;
+ const who=id=>(typeof studentRoster==='undefined'?[]:studentRoster).find(p=>p.user_id===id)?.display_name||'Użytkownik';
+ async function load(){
+  const me=A.user()?.id||null;if(me!==account){account=me;seq++;busy=false;admin=false;rows=[];error='';dirty=false;if(pane)render();notify();}
+  if(!account||!client()||busy||document.hidden)return;const n=seq;busy=true;
+  try{const results=await Promise.all([client().rpc('is_chat_admin'),client().from('app_suggestions').select('*').order('created_at',{ascending:false}).limit(100)]);if(n!==seq||A.user()?.id!==me)return;for(const r of results)if(r.error)throw r.error;admin=results[0].data===true;const changed=JSON.stringify(rows)!==JSON.stringify(results[1].data);rows=results[1].data||[];error='';if(pane&&!pane.hidden&&changed&&!dirty&&!sending)render();notify();}
+  catch{if(n===seq){error='Nie udało się pobrać zgłoszeń. Spróbuj odświeżyć.';if(pane&&!pane.hidden&&!dirty&&!sending)render();}}
+  finally{if(n===seq)busy=false;}
+ }
+ function render(){
+  if(!pane)return;
+  if(!account){pane.innerHTML='<h3>💡 Pomysły na EduLigę</h3><p>Zaloguj się, aby wysłać pomysł i zdjęcie administratorom.</p><button class="primary" type="button">Zaloguj się</button>';pane.querySelector('button').onclick=()=>openSyncDialog();return;}
+  pane.innerHTML='<h3>💡 Rozwijajmy EduLigę</h3><p class="community-note">Zgłoś usprawnienie, błąd lub nowe słówka. Treść i zdjęcie zobaczą administratorzy oraz Ty.</p><form class="suggestion-form"><label>Twój pomysł<textarea name="body" required minlength="5" maxlength="3000" rows="3" placeholder="Co warto dodać lub poprawić?"></textarea></label><label class="suggestion-file">📷 Zdjęcie z podręcznika lub zrzut ekranu<input name="image" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Jedno zdjęcie do 15 MB. Przed wysłaniem zmniejszymy je do 6 MB.</small><div class="suggestion-preview"></div><button class="primary" type="submit">Wyślij administratorom →</button><p role="status" class="suggestion-status"></p></form><div class="suggestion-list-head"><b>'+(admin?'Skrzynka administratora':'Twoje zgłoszenia')+'</b><button type="button" class="secondary" data-reload-suggestions>↻ Odśwież</button></div>'+(error?'<p role="status">'+E(error)+'</p>':'')+'<div class="suggestion-list">'+(rows.length?rows.map(r=>'<article class="suggestion-card '+(!r.reviewed_at?'unreviewed':'')+'"><small>'+E(who(r.author_id))+' · '+new Date(r.created_at).toLocaleString('pl-PL',{dateStyle:'short',timeStyle:'short'})+'</small><p>'+E(r.body)+'</p><div data-suggestion-image="'+E(r.id)+'"></div><small>'+(r.reviewed_at?'✓ Obejrzane przez administratora':'● Czeka na obejrzenie')+'</small>'+(admin&&!r.reviewed_at?'<button type="button" class="secondary" data-review-suggestion="'+r.id+'">✓ Oznacz jako obejrzane</button>':'')+'</article>').join(''):'<p>Tu pojawią się '+(admin?'pomysły uczniów':'Twoje wysłane pomysły')+'.</p>')+'</div>';
+  const form=pane.querySelector('form');form.oninput=()=>dirty=true;form.onsubmit=send;
+  pane.querySelector('[name=image]').onchange=()=>{dirty=true;const file=form.elements.namedItem('image').files[0],preview=pane.querySelector('.suggestion-preview');preview.replaceChildren();if(file){const p=document.createElement('p');p.textContent='Załącznik: '+file.name;preview.append(p);}};
+  pane.querySelector('[data-reload-suggestions]').onclick=async()=>{await load();if(!dirty&&!sending)render();};
+  pane.querySelectorAll('[data-review-suggestion]').forEach(b=>b.onclick=async()=>{const me=account;b.disabled=true;try{const {error}=await client().rpc('review_app_suggestion',{p_id:b.dataset.reviewSuggestion});if(error)throw error;if(account===me){await load();render();}}catch{b.textContent='Nie udało się — ponów';b.disabled=false;}});
+  const me=account;rows.filter(r=>r.image_path).forEach(async r=>{const mount=pane.querySelector('[data-suggestion-image="'+r.id+'"]');const {data,error}=await client().storage.from('suggestion-images').createSignedUrl(r.image_path,300);if(error||account!==me||!mount?.isConnected)return;const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener';a.setAttribute('aria-label','Otwórz załączone zdjęcie');const img=document.createElement('img');img.src=data.signedUrl;img.alt='Zdjęcie do pomysłu';img.loading='lazy';a.append(img);mount.append(a);});
+ }
+ async function photo(file){
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024)throw new Error('Wybierz zdjęcie JPG, PNG lub WebP do 15 MB.');
+  const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'}),ratio=Math.min(1,1800/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));const c=canvas.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,canvas.width,canvas.height);c.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return new Promise((resolve,reject)=>canvas.toBlob(b=>b&&b.size<=6291456?resolve(b):reject(new Error('Nie udało się przygotować zdjęcia.')),'image/jpeg',.85));
+ }
+ async function send(event){
+  event.preventDefault();if(sending||!account)return;const me=account,form=event.target,button=form.querySelector('[type=submit]'),status=form.querySelector('.suggestion-status'),body=form.elements.namedItem('body').value.trim(),file=form.elements.namedItem('image').files[0],id=crypto.randomUUID();let path=null,committed=false;
+  sending=true;button.disabled=true;status.textContent='Wysyłam…';
+  try{if(file){const blob=await photo(file);if(A.user()?.id!==me)throw new Error('Konto się zmieniło.');path=me+'/'+id+'.jpg';const {error}=await client().storage.from('suggestion-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});if(error)throw error;}if(A.user()?.id!==me)throw new Error('Konto się zmieniło.');const {error}=await client().rpc('post_app_suggestion',{p_body:body,p_image:path});if(error)throw error;committed=true;if(A.user()?.id===me){form.reset();dirty=false;status.textContent='✓ Wysłano! Administratorzy zobaczą Twój pomysł.';pane.querySelector('.suggestion-preview').replaceChildren();await load();}}
+  catch(e){if(path&&!committed&&A.user()?.id===me)await client().storage.from('suggestion-images').remove([path]);if(account===me)status.textContent=e.message||'Nie udało się wysłać. Spróbuj ponownie.';}
+  finally{sending=false;if(account===me){button.disabled=false;if(committed){render();pane.querySelector('.suggestion-status').textContent='✓ Wysłano! Administratorzy zobaczą Twój pomysł.';}}}
+ }
+ window.EduSuggestions={mount:(node,callback)=>{pane=node;notify=callback;void load();render();},open:()=>{if(!dirty&&!sending)render();void load();},load,count:()=>admin?rows.filter(r=>!r.reviewed_at).length:0};
+ window.addEventListener('ortoliga-auth-change',()=>void load());
+})();

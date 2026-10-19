@@ -3,6 +3,7 @@
  const A=LeagueApp,E=A.esc,client=()=>window.ortoligaSyncClient,key='eduliga-guest-session-v1';
  const leagues={ortho:'OrtoLiga',english:'Angielski',spanish:'Hiszpański',helper:'Pomocnik',none:'EduLiga'};
  const sections={cards:'Fiszki',practice:'Trening',progress:'Postępy',battle:'Bitwa',rankings:'Ranking',pairs:'Pary',writing:'Pisownia',dictionary:'Słownik',sentences:'Zdania',dictation:'Dyktando',rules:'Zasady',words:'Moje słowa',topics:'Wybór działu',none:'Start'};
+ let answerNow=false;
  let session=null,queue=[],sending=false,lastInput=Date.now(),lastLeague='',lastSection='',baseline={correct:0,wrong:0},orthoSeen=new Set(),pane=null,days=7,report=null,error='',busy=false,lastLoad=0,reportOwner=null;
  const enabled=()=>{try{return localStorage.getItem('eduliga-guest-stats-off')!=='1';}catch{return false;}};
  const topics={none:'',part1:'Nieregularne 1',part2:'Nieregularne 2',all:'Nieregularne 1 + 2',tenses:'Czasy','lesson-20261019':'Słówka 19.10.2026',everyday:'Poznajmy się'};
@@ -22,8 +23,10 @@
  document.addEventListener('click',()=>{lastInput=Date.now();setTimeout(()=>{if(!A.user()&&activeLeague()!=='none'){begin();navigation();}},0);},true);
  document.addEventListener('keydown',()=>lastInput=Date.now(),{passive:true});document.addEventListener('scroll',()=>lastInput=Date.now(),{passive:true,capture:true});
  new MutationObserver(()=>{if(guest())navigation();}).observe(document.body,{attributes:true,attributeFilter:['data-active-league']});
+ function onlyNewAnswer(fn){return(...args)=>{const before=answerNow;answerNow=true;try{return fn(...args);}finally{answerNow=before;}};}
+ window.submitEnglishAnswer=onlyNewAnswer(window.submitEnglishAnswer);window.awardEnglishExercise=onlyNewAnswer(window.awardEnglishExercise);
  const persist=persistAccount;persistAccount=(owner,...args)=>{const result=persist(owner,...args);if(!owner&&guest()){
-  const c=Number(data.englishLeague?.correct)||0,w=Number(data.englishLeague?.wrong)||0,dc=c-baseline.correct,dw=w-baseline.wrong;baseline={correct:c,wrong:w};if(dc>0||dw>0)event('answer','english','practice',Math.max(0,dc),Math.max(0,dw));
+  const c=Number(data.englishLeague?.correct)||0,w=Number(data.englishLeague?.wrong)||0,dc=c-baseline.correct,dw=w-baseline.wrong;baseline={correct:c,wrong:w};if(answerNow&&(dc>0||dw>0))event('answer','english','practice',Math.max(0,dc),Math.max(0,dw));
   for(const s of data.sessions||[]){const id=s.id||s.createdAt||s.date+':'+s.title;if(!orthoSeen.has(id)){orthoSeen.add(id);if(s.id&&s.createdAt)event('series','ortho','dictation');}}
  }return result;};
  const record=A.record;A.record=(league,e)=>{const result=record(league,e);if(result&&guest()&&Object.hasOwn(leagues,league)){if(e.kind==='answer')event('answer',league,league==='spanish'?(e.mode==='sentences'?'sentences':document.querySelector('#view-spanish [data-spanish-tab].active')?.dataset.spanishTab||'writing'):'practice',Number(!!e.ok),Number(!e.ok));if(e.kind==='flash')event('flash',league,'cards');if(e.kind==='series')event('series',league,'practice');}return result;};

@@ -19,6 +19,7 @@
  function validTask(key,t){
   if(!t)return null;if(key==='ortho')return ortho.find(x=>x.id===t.id)||null;
   if(key==='spanish'){const w=SPANISH_WORDS.find(w=>w.id===t.id);return w?{id:w.id,word:w.id,prompt:w.pl,wants:[w.es]}:null;}
+  if(window.learningTopic?.('english')==='lesson-20261019')return window.EnglishLesson?.find(t.id)||null;
   if(window.learningTopic?.('english')==='tenses')return window.EnglishTenses?.find(t.id)||null;
   const v=window.ENGLISH_VERBS.find(v=>v.id===t.id),m=t.mode;
   if(!v||!['pl-to-pair','base-to-past','past-to-base','en-to-pl'].includes(m))return null;
@@ -27,6 +28,7 @@
  function taskFor(key){
   if(key==='ortho')return ortho[Math.floor(Math.random()*ortho.length)];
   if(key==='spanish')return validTask(key,{id:SPANISH_WORDS[Math.floor(Math.random()*SPANISH_WORDS.length)].id});
+  if(window.learningTopic?.('english')==='lesson-20261019')return window.EnglishLesson.pick();
   if(window.learningTopic?.('english')==='tenses')return window.EnglishTenses.pick();
   const pool=window.getEnglishVocabulary?.()||window.ENGLISH_VERBS,v=pool[Math.floor(Math.random()*pool.length)],modes=/[\s/()]/.test(v.pl)?['pl-to-pair','base-to-past','past-to-base']:['pl-to-pair','base-to-past','past-to-base','en-to-pl'];
   return validTask(key,{id:v.id,mode:modes[Math.floor(Math.random()*modes.length)]});
@@ -143,13 +145,14 @@ const players={};
   else {A.record(room.league,{id,kind:'battle',word:room.task.word,ok:mine.correct.every(Boolean),delta:mine.points});if(room.round===10)A.record(room.league,{id:room.match+':match',kind:'match',win,delta:0});}
  }
  function englishBoard(t){
+  if(String(t.id).startsWith('lesson-'))return window.EnglishLesson.board(t,true);
   if(String(t.id).startsWith('tense-'))return window.EnglishTenses.board(t,true);
   const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);
   return '<div class="english-prompt"><span>Uzupełnij luki</span><button type="button" class="english-speak" aria-label="Odtwórz podane słowa" onclick="speakEnglishQuestion('+v.id+',\''+t.mode+'\')">🔊</button></div>'+window.englishQuestionBoard(v,t.mode).replace(/class="english-answer /g,'class="arena-answer english-answer ').replace(/data-answer="(\d+)"/g,'id="arena-answer-$1" data-answer="$1"');
  }
  function correctRound(r){return !!r&&!r.skipped&&r.correct?.length>0&&r.correct.every(Boolean);}
- function taskWhy(t){if(String(t.id).startsWith('tense-'))return window.EnglishTenses.ruleFeedback(t);let text;if(room.league==='ortho')text=(typeof league!=='undefined'?league.lookup(t.word)?.rule:null)||'Poprawny zapis to '+t.word+'. Porównaj brakujące litery z pełnym wyrazem.';else if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);text=v?v.base+' → '+v.past+' to zapamiętywana para form czasownika nieregularnego. Znaczenie: '+v.pl+'.':'Porównaj poprawne formy ze swoim zapisem.';}else text=t.prompt+' po hiszpańsku to '+t.wants[0]+'. Zwróć uwagę na dokładny zapis liter i akcentów.';return window.learningWhy?.(text)||'';}
- function taskCorrection(t){if(!t)return '';if(String(t.id).startsWith('tense-'))return '<p>'+A.esc(t.sentence.replace('___',t.wants[0]))+'</p><small>'+A.esc(window.EnglishTenses.answerText(t))+'</small>';if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);return v?'<p>PL: '+A.esc(v.pl)+' · 1: <b>'+A.esc(v.base)+'</b> · 2: <b>'+A.esc(v.past)+'</b></p>':'';}return '<p>'+A.esc(room.league==='ortho'?t.sentence:t.prompt+' → '+t.wants[0])+'</p>';}
+ function taskWhy(t){if(String(t.id).startsWith('lesson-'))return window.EnglishLesson.why(t);if(String(t.id).startsWith('tense-'))return window.EnglishTenses.ruleFeedback(t);let text;if(room.league==='ortho')text=(typeof league!=='undefined'?league.lookup(t.word)?.rule:null)||'Poprawny zapis to '+t.word+'. Porównaj brakujące litery z pełnym wyrazem.';else if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);text=v?v.base+' → '+v.past+' to zapamiętywana para form czasownika nieregularnego. Znaczenie: '+v.pl+'.':'Porównaj poprawne formy ze swoim zapisem.';}else text=t.prompt+' po hiszpańsku to '+t.wants[0]+'. Zwróć uwagę na dokładny zapis liter i akcentów.';return window.learningWhy?.(text)||'';}
+ function taskCorrection(t){if(!t)return '';if(String(t.id).startsWith('lesson-'))return '<p>'+A.esc(t.pl)+' → <b>'+A.esc(t.en)+'</b></p>';if(String(t.id).startsWith('tense-'))return '<p>'+A.esc(t.sentence.replace('___',t.wants[0]))+'</p><small>'+A.esc(window.EnglishTenses.answerText(t))+'</small>';if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);return v?'<p>PL: '+A.esc(v.pl)+' · 1: <b>'+A.esc(v.base)+'</b> · 2: <b>'+A.esc(v.past)+'</b></p>':'';}return '<p>'+A.esc(room.league==='ortho'?t.sentence:t.prompt+' → '+t.wants[0])+'</p>';}
  function roundReview(n){const rows=room.results[n],t=room.roundTasks[n];if(!rows||!t)return '';const mine=rows.find(r=>r.id===uid()),bad=mine&&!correctRound(mine);return '<section class="arena-review"><h3>Runda '+n+' · '+(bad?'Twój błąd — zobacz poprawny zapis':mine?'Twoja odpowiedź poprawna':'Przebieg rundy')+'</h3><div class="arena-correction">'+taskCorrection(t)+'</div>'+(mine?'<p class="arena-own-answer '+(bad?'bad':'good')+'">'+(mine.skipped?'Nie wiem / brak odpowiedzi':(bad?'Twoja odpowiedź: ':'✓ Twoja odpowiedź: ')+A.esc(mine.answers.join(' · ')))+' · <b>'+mine.points+' '+A.configs[room.league].unit+'</b></p>':'')+taskWhy(t)+'<details class="learning-why arena-review-all"><summary>Odpowiedzi wszystkich zawodników</summary>'+rows.map(r=>'<p class="'+(correctRound(r)?'good':'bad')+'"><b>'+(correctRound(r)?'✓ ':'✗ ')+A.esc(r.name)+'</b> · '+(r.skipped?'Nie wiem / brak odpowiedzi':A.esc(r.answers.join(' · ')))+' · '+r.points+' '+A.configs[room.league].unit+' · '+(Math.round(r.elapsed/100)/10)+' s</p>').join('')+'</details></section>';}
  function liveScores(){
   const ids=[...new Set([...Object.keys(room.players),...Object.keys(room.scores)])].sort((a,b)=>(room.scores[b]||0)-(room.scores[a]||0)||a.localeCompare(b)),unit=A.configs[room.league].unit,colors=['#a789eb','#46b6d4','#efa54b','#72bb78','#e776a6','#7f99ee','#cb9562','#5ab5a0'],done=Object.keys(room.results).map(Number).filter(n=>n>=1&&n<=10).sort((a,b)=>a-b),last=done.at(-1)||0;

@@ -461,3 +461,12 @@ const previousInitSyncForChat=initSync;initSync=async()=>{await previousInitSync
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{void startClassChat();},{once:true});else void startClassChat();
 let classChatRefreshTimer=null;const chatAuthButton=document.getElementById('sync-open');if(chatAuthButton)new MutationObserver(()=>{clearTimeout(classChatRefreshTimer);classChatRefreshTimer=setTimeout(()=>void startClassChat(),80);}).observe(chatAuthButton,{childList:true,subtree:true,characterData:true});
 let classChatBootAttempts=0;const classChatBootTimer=setInterval(()=>{const chatClient=window.ortoligaSyncClient||syncClient;if(chatClient){window.ortoligaSyncClient=chatClient;clearInterval(classChatBootTimer);void startClassChat();}else if(++classChatBootAttempts>=60)clearInterval(classChatBootTimer);},250);
+
+// Confirmation is requested explicitly by the account owner; no automatic e-mails.
+window.resendAccountConfirmation=async()=>{
+ const email=document.getElementById('student-reset-email').value.trim().toLowerCase(),button=document.getElementById('auth-confirm-resend');
+ if(!syncClient){setSyncStatus('Brak połączenia z kontem.','error');return;}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setSyncStatus('Wpisz adres e-mail użyty do rejestracji.','error');return;}
+ button.disabled=true;setSyncStatus('Wysyłam potwierdzenie…');
+ try{const {error}=await syncClient.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+location.pathname}});if(error)throw error;setSyncStatus('Jeśli konto wymaga potwierdzenia, wiadomość została wysłana. Otwórz najnowszy link i sprawdź też spam.','success');}catch(error){setSyncStatus(studentAuthError(error),'error');}finally{button.disabled=false;}
+};

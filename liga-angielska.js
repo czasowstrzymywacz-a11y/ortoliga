@@ -146,7 +146,7 @@
     state.arenaResults??=[];
     if(state.arenaResults.some(x=>x.id===result.id))return;
     state.arenaResults.push({id:result.id,points:result.points});
-    const verb=ALL_VERBS.find(v=>v.id===result.task.id)||window.EnglishTenses?.find(result.task.id);
+    const verb=ALL_VERBS.find(v=>v.id===result.task.id)||window.EnglishTenses?.find(result.task.id)||window.EnglishLesson?.find(result.task.id);
     if(verb)result.correct.forEach((ok,i)=>record(verb,ok,result.answers[i]||'',null));
     addXP(result.points,result.id,"battle",{word:String(result.task.id),correctDelta:result.correct.filter(Boolean).length,wrongDelta:result.correct.filter(x=>!x).length,battleDelta:Number(result.final),winDelta:Number(result.final&&result.win)});
     if(result.final){state.battles++;if(result.win)state.battleWins++;}

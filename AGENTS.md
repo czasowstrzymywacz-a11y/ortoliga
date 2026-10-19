@@ -20,3 +20,5 @@
 - Od 0.66 publikuj również eduliga-hosting.js. Główny adres użytkowników to https://eduliga.web.app/ w projekcie Firebase `eduliga`, witryna Hosting `eduliga`, bezpłatny plan Spark. Kod i kopia aplikacji pozostają w repozytorium GitHub `eduliga`; publikację Firebase wykonuj przez `.firebase-hosting/Deploy-Hosting.ps1` po przygotowaniu wersji i historii. Potwierdź nowy adres przed aktualizacją starych. Stary `/eduliga/` zachowuje pełną aplikację dla lokalnych wyników i powrotów logowania; `eduliga-hosting.js` kieruje nowych użytkowników do Firebase, a osoby z lokalną sesją lub postępami mogą przejść po zabezpieczeniu wyników. Nigdy nie przekazuj tokenów sesji między domenami. `.publish-stage` nadal kieruje `/ortoliga/` do `/eduliga/`, gdzie działa ta ochrona.
 
 - Od 0.70 publikuj również eduliga-tenses.js i eduliga-suggestions.js. Migracja 202610170004_suggestions_and_tenses.sql musi być wdrożona przed publikacją.
+
+- Od 0.76 publikuj również eduliga-english-lesson.js. Migracja 202610190001_english_lesson.sql dopuszcza zaproszenia do nowego działu.

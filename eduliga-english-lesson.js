@@ -1,0 +1,36 @@
+/* Vocabulary from the lesson dated 19.10.2026; aXP stays in the English ledger. */
+(() => {
+ const A=LeagueApp,E=A.esc;
+ const words=[
+ ['disappear','zniknąć','The parcel can disappear.','Przesyłka może zniknąć.'],
+ ['flu','grypa','He has the flu.','On ma grypę.'],
+ ['find','znaleźć','Can you find the parcel?','Czy możesz znaleźć przesyłkę?'],
+ ['solve','rozwiązać (zagadkę)','We can solve the puzzle.','Możemy rozwiązać zagadkę.'],
+ ['case','sprawa','It is a difficult case.','To trudna sprawa.'],
+ ['while','podczas gdy','I read while he plays.','Czytam, podczas gdy on gra.'],
+ ['arrest','aresztować','The police can arrest him.','Policja może go aresztować.'],
+ ['parcel','przesyłka','This parcel is for you.','Ta przesyłka jest dla ciebie.']
+ ].map(([en,pl,example,translation],i)=>({id:'lesson-20261019-'+i,en,pl,example,translation,prompt:pl,wants:[en],mode:'lesson-to-en'}));
+ let card=0,flipped=false,mode='cards',round=null;
+ const panel=document.createElement('section');panel.id='english-panel-lesson';panel.className='english-panel tense-module';panel.hidden=true;document.getElementById('view-english').append(panel);
+ const arena=document.getElementById('arena-english'),arenaHome=arena.parentNode;
+ function hide(){panel.hidden=true;if(arena.parentNode===panel)arenaHome.append(arena);}
+ function board(t,battle=false){return '<div class="tense-question"><small>19.10.2026 · wpisz słowo po angielsku</small><p>'+E(t.pl)+'</p><label class="tense-sentence"><span class="tense-slot"><input '+(battle?'id="arena-answer-0"':'id="lesson-answer"')+' class="'+(battle?'arena-answer ':'')+'tense-answer" required maxlength="60" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Angielskie znaczenie: '+E(t.pl)+'"></span></label></div>';}
+ function why(t){return '<details class="learning-why"><summary>💡 Dlaczego tak?</summary><p>'+E(t.en)+' = '+E(t.pl)+'.</p><p lang="en">'+E(t.example)+'</p><p>'+E(t.translation)+'</p></details>';}
+ function pick(){const pool=words.flatMap(w=>{const s=window.englishTaskStats(w.id);return Array(1+Math.min(5,Math.max(0,(s.wrong||0)*2-(s.correct||0)))).fill(w);});return pool[Math.floor(Math.random()*pool.length)];}
+ function render(){if(panel.hidden)return;
+  document.querySelector('#view-english .english-kicker').textContent='LIGA ANGIELSKA · SŁÓWKA · 19.10.2026';
+  if(mode==='battle'){panel.innerHTML='<h2>⚔️ Bitwa słówek · 19.10.2026</h2><p>Polskie znaczenie → angielskie słowo. 8 słów z lekcji, 10 rund po 30 sekund.</p>';panel.append(arena);LeagueArena.renderLobby('english');return;}
+  if(mode==='progress'){panel.innerHTML='<h2>📈 Moje słowa · 19.10.2026</h2><div class="tense-stat-grid">'+words.map(w=>{const s=window.englishTaskStats(w.id),n=s.correct+s.wrong;return '<article><h3>'+E(w.en)+'</h3><p>'+E(w.pl)+'</p><strong>'+s.correct+' / '+n+'</strong><p>Poprawne · '+(n?Math.round(s.correct/n*100):0)+'%</p></article>';}).join('')+'</div><p>Punkty trafiają do wspólnej puli aXP. Trening częściej wraca do trudniejszych słów.</p>';return;}
+  panel.innerHTML='<h2>'+(mode==='cards'?'▣ Fiszki z wymową':'🎯 Trening słówek')+' · 19.10.2026</h2><details class="tense-help"><summary>ⓘ Jak się uczyć?</summary><p>Odkrywaj fiszki i słuchaj wymowy. W treningu wpisuj angielskie znaczenie polskiego słowa. +10 aXP za poprawną odpowiedź, −5 za błąd. Trening bez limitu czasu.</p></details><div class="lesson-content"></div>';
+  const box=panel.querySelector('.lesson-content');
+  if(mode==='cards'){const w=words[card];box.innerHTML='<div class="study-card-progress"><span>A surprise for Smart Alec!</span><b>'+(card+1)+' / '+words.length+'</b></div><button class="verb-flash '+(flipped?'is-flipped':'')+'" type="button"><small>'+(flipped?'Angielskie znaczenie':'Odkryj angielskie słowo')+'</small><h2>'+E(w.pl)+'</h2>'+(flipped?'<h2 lang="en">'+E(w.en)+'</h2><p lang="en">'+E(w.example)+'</p><small>'+E(w.translation)+'</small>':'<div class="flash-mystery">?</div>')+'<em>↻ Odwróć fiszkę</em></button><div class="flash-controls"><button class="secondary" data-step="-1">← Poprzednia</button><button class="primary" data-sound>🔊 Wymowa</button><button class="secondary" data-step="1">Następna →</button></div>';box.querySelector('.verb-flash').onclick=()=>{flipped=!flipped;render();};box.querySelector('[data-sound]').onclick=()=>A.speech(w.en,'en-GB');box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{card=(card+Number(b.dataset.step)+words.length)%words.length;flipped=false;render();});return;}
+  if(!round){box.innerHTML='<label class="tense-size">Prób w serii <select><option>8</option><option selected>10</option><option>15</option><option>20</option></select></label><button class="english-start">Rozpocznij trening →</button>';box.querySelector('button').onclick=()=>{round={id:crypto.randomUUID(),size:Number(box.querySelector('select').value),index:0,hits:0,task:null,answered:false};next();};return;}
+  const t=round.task;box.innerHTML='<p>Próba '+(round.index+1)+' / '+round.size+' · '+round.hits+' poprawnych</p><progress max="'+round.size+'" value="'+round.index+'"></progress><form>'+board(t)+'<button type="button" class="secondary" data-speak>🔊 Posłuchaj pytania</button><button class="primary" type="submit">Sprawdź →</button><button class="secondary" type="button" data-stop>Zakończ</button><div class="lesson-feedback" role="status"></div></form>';
+  const input=box.querySelector('input');input.oninput=()=>{const pos=input.selectionStart;input.value=input.value.toLowerCase();input.setSelectionRange(pos,pos);};box.querySelector('[data-speak]').onclick=()=>A.speech(t.pl,'pl-PL');box.querySelector('[data-stop]').onclick=()=>{round=null;render();};box.querySelector('form').onsubmit=e=>{e.preventDefault();if(!round||round.answered)return;round.answered=true;const ok=window.englishAnswerCorrect(input.value,t.en,t.mode);window.awardEnglishExercise(t,ok,10);if(ok)round.hits++;input.disabled=true;box.querySelector('.lesson-feedback').innerHTML='<p class="answer-feedback '+(ok?'good':'bad')+'">'+(ok?'✓ Świetnie! +10 aXP':'Poprawnie: <b>'+E(t.en)+'</b> · −5 aXP')+'</p>'+why(t);const b=box.querySelector('[type=submit]');b.type='button';b.textContent='Dalej →';b.onclick=()=>{round.index++;next();};b.focus();};input.focus();
+ }
+ function next(){if(round.index>=round.size){const r=round;window.finishEnglishTenseSeries(r.id);round=null;panel.innerHTML='<div class="english-round-result"><h2>🎉 Seria ukończona!</h2><p>Poprawne: '+r.hits+' / '+r.size+'</p><button class="primary">Nowa seria →</button></div>';panel.querySelector('button').onclick=render;return;}round.task=pick();round.answered=false;render();}
+ function open(tab){if(tab==='rankings'){hide();return;}mode=['cards','practice','progress','battle'].includes(tab)?tab:'cards';if(mode!=='practice')round=null;document.querySelectorAll('#view-english .english-panel').forEach(p=>p.hidden=p!==panel);panel.hidden=false;document.getElementById('english-mastered').closest('.english-stat').hidden=true;render();}
+ window.EnglishLesson={open,hide,find:id=>words.find(w=>w.id===id),pick,board,why};
+ window.addEventListener('ortoliga-auth-change',()=>{round=null;card=0;flipped=false;if(!panel.hidden)render();});
+})();

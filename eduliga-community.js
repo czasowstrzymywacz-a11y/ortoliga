@@ -23,7 +23,7 @@
   fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='signup'?'👤':kind==='idea'?'💡':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(sn?'<em>💡</em>':'')+(signupCount?'<em>👤</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
   fab.setAttribute('aria-label',(opened()?'Zamknij':'Otwórz')+' rozmowy i powiadomienia'+(n?' · '+n+' nowych':''));
   fab.setAttribute('aria-expanded',String(opened()));
-  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'">💡 Pomysły '+badge(sn)+'</button>'+(signupAdmin?'<button data-community-tab="signups" aria-pressed="'+(tab==='signups')+'">👤 Nowe konta '+badge(signupCount)+'</button>':'');
+  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'" title="Pomysły na rozwój aplikacji" aria-label="Pomysły na rozwój aplikacji">💡 '+badge(sn)+'<span class="sr-only">Pomysły</span></button>'+(signupAdmin?'<button data-community-tab="signups" aria-pressed="'+(tab==='signups')+'">👤 Nowe konta '+badge(signupCount)+'</button>':'');
   tabs.querySelectorAll('[data-community-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.communityTab));
  }
  function helperUnread(){return helperRows.filter(t=>t.author_id!==owner&&!helperRead.has(t.id)).length;}
@@ -39,7 +39,10 @@
   finally{if(seq===generation)helperBusy=false;}
  }
  function renderSignups(){
+  const oldScroll=signupPane.scrollTop;
   signupPane.innerHTML=!signupAdmin?'<p>Powiadomienia o kontach są dostępne administratorom.</p>':'<h3>👤 Nowe konta w EduLidze</h3><p class="community-note">Nowe rejestracje od wersji 0.74. Odczyt zapisujemy osobno dla każdego administratora.</p>'+(signupError?'<p role="status">'+esc(signupError)+'</p>':'')+(signupRows.length?signupRows.map(row=>'<article class="signup-notification '+(!row.is_read?'unread':'')+'"><span aria-hidden="true">👋</span><div><b>'+esc(row.display_name)+'</b><p>Utworzono nowe konto</p><time datetime="'+esc(row.created_at)+'">'+new Date(row.created_at).toLocaleString('pl-PL',{dateStyle:'medium',timeStyle:'short'})+'</time></div></article>').join(''):'<p>Gdy zarejestruje się nowy użytkownik, jego powiadomienie pojawi się tutaj — także po Twoim powrocie do aplikacji.</p>');
+  if(signupAdmin){const report=document.createElement('section');report.className='guest-report';signupPane.append(report);window.EduGuestActivity?.mount(report);}
+  signupPane.scrollTop=oldScroll;
  }
  async function loadSignups(){
   if(signupBusy||!owner||!client()||document.hidden)return;signupBusy=true;const account=owner,seq=generation;

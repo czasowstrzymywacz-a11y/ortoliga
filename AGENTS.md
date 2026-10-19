@@ -22,3 +22,5 @@
 - Od 0.70 publikuj również eduliga-tenses.js i eduliga-suggestions.js. Migracja 202610170004_suggestions_and_tenses.sql musi być wdrożona przed publikacją.
 
 - Od 0.76 publikuj również eduliga-english-lesson.js. Migracja 202610190001_english_lesson.sql dopuszcza zaproszenia do nowego działu.
+
+- Od 0.80 publikuj również eduliga-guests.js. Przed publikacją wdroż migrację 202610190002_guest_activity.sql. Statystyki gości są anonimowe i opcjonalne; panel odczytu jest tylko dla administratorów czatu.

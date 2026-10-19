@@ -2,3 +2,6 @@ project_id = "kubuighspmtztyxdgwxd"
 
 [functions.student-auth]
 verify_jwt = false
+
+[functions.admin-push]
+verify_jwt = false

@@ -418,13 +418,12 @@ function chatMessageNode(message){
  const body=document.createElement('span');body.textContent=message.removed_at?'Wiadomość usunięta':message.body||'';
  const when=document.createElement('time');when.dateTime=message.created_at||'';when.textContent=message.created_at?new Date(message.created_at).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'';
  row.append(who,body,when);
- if(classChatAdmin){const action=document.createElement('button');action.type='button';action.className='chat-moderate';action.textContent=message.removed_at?'Cofnij':'Usuń';action.setAttribute('aria-label',(message.removed_at?'Przywróć':'Usuń')+' wiadomość od '+(message.sender_name||'ucznia'));action.onclick=()=>moderateClassChatMessage(message.id,!!message.removed_at,action);row.append(action);}
  row.classList.toggle('removed',!!message.removed_at);return row;
 }
 function appendClassChatMessage(message){
  const box=document.getElementById('chat-messages');if(!box||!message)return;
  const existing=box.querySelector('[data-chat-id="'+message.id+'"]');
- if(message.removed_at&&!classChatAdmin){existing?.remove();return;}
+ if(message.removed_at){existing?.remove();return;}
  const node=chatMessageNode(message);node.dataset.chatId=message.id;
  if(existing){existing.replaceWith(node);return;}
  box.append(node);while(box.children.length>40)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;

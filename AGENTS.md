@@ -34,3 +34,5 @@
 - Od 0.85 przed publikacją wdroż migrację 202610200003_battle_rooms.sql. Bitwy używają uwierzytelnionych RPC do synchronizacji składu pokoju i krótkotrwałych pakietów gry. Identyfikator konta wyłącznie z auth.uid(); bez bezpośredniego dostępu klienta do tabel. Lista otwartych bitew jest w zakładce bitew czatu.
 
 - Od 0.86 przed publikacją wdroż migrację 202610200004_helper_photos.sql. Wiele zdjęć Pomocnika jest w helper_attachments, zapisywanych przez helper_post_images i helper_add_images. Dodatkowe zdjęcia dołącza wyłącznie autor wpisu; za dołączenie zdjęć nie przyznawaj ponownie pXP. Zachowaj obsługę wcześniejszych image_path i zasady widoczności usuniętych wpisów.
+
+- Od 0.87 przed publikacją wdroż 202610200005_helper_needs.sql. Dołączenie do pytania Pomocnika nie daje pXP; helper_support wiąże użytkownika przez auth.uid(), a get_helper_needs zwraca tylko licznik i własny stan. Wspólny dobór powtórek EduPractice jest w liga-platform.js, używany w treningach obu języków.

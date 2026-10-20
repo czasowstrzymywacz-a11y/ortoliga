@@ -35,3 +35,24 @@
  new MutationObserver(dayStreak).observe(document.body,{attributes:true,attributeFilter:['data-active-league']});
  window.addEventListener('ortoliga-auth-change',()=>{window.resetSpanishPractice?.();window.renderSpanishSummary?.();});
 })();
+
+/* Practice selection: recent mistakes, new material, then maintenance reviews. */
+(()=>{
+ const cycle=['weak','weak','new','weak','mastered','weak','new','weak','weak','weak'];
+ function status(item,stats,events){
+  const s=stats(item)||{},id=String(item.id),rows=(events||[]).filter(e=>String(e.word)===id&&(typeof e.ok==='boolean'||Number(e.correctDelta)||Number(e.wrongDelta))).slice(-8);
+  const recent=rows.length?rows.map(e=>typeof e.ok==='boolean'?e.ok:!Number(e.wrongDelta)&&Number(e.correctDelta)>0):(s.recent||[]).map(r=>typeof r==='boolean'?r:r?.ok).filter(r=>typeof r==='boolean');
+  const correct=Math.max(0,Number(s.correct)||0),wrong=Math.max(0,Number(s.wrong)||0),total=correct+wrong,last=recent.at(-1),recovered=recent.length>=3&&recent.slice(-3).every(Boolean);
+  const weak=!recovered&&(last===false||recent.slice(-3).includes(false)||(wrong>0&&correct/Math.max(1,total)<.8));
+  return {kind:weak?'weak':!total?'new':'mastered',weight:weak?5+recent.filter(x=>!x).length*3+wrong/Math.max(1,total)*5:1};
+ }
+ function choose(pool,{stats=()=>({}),events=[],history=[]}={}){
+  if(!pool.length)return null;const latest=(events||[]).slice(-2000),counts=new Map();for(const id of history)counts.set(String(id),(counts.get(String(id))||0)+1);
+  const last=new Set(history.slice(-2).map(String)),available=pool.filter(item=>!last.has(String(item.id))),candidates=(available.length?available:pool).map(item=>({item,...status(item,stats,latest)}));
+  const desired=cycle[history.length%cycle.length],group=candidates.filter(x=>x.kind===desired),fallback=['weak','new','mastered'].map(kind=>candidates.filter(x=>x.kind===kind)).find(rows=>rows.length),initialRows=group.length?group:fallback;let rows=initialRows;
+  if(rows[0].kind!=='weak'){const fresh=rows.filter(x=>!counts.has(String(x.item.id)));if(fresh.length)rows=fresh;}
+  let target=Math.random()*rows.reduce((sum,x)=>sum+x.weight/(1+(counts.get(String(x.item.id))||0)),0);
+  for(const row of rows){target-=row.weight/(1+(counts.get(String(row.item.id))||0));if(target<=0)return row.item;}return rows.at(-1).item;
+ }
+ window.EduPractice={choose};
+})();

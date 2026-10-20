@@ -36,3 +36,7 @@
 - Od 0.86 przed publikacją wdroż migrację 202610200004_helper_photos.sql. Wiele zdjęć Pomocnika jest w helper_attachments, zapisywanych przez helper_post_images i helper_add_images. Dodatkowe zdjęcia dołącza wyłącznie autor wpisu; za dołączenie zdjęć nie przyznawaj ponownie pXP. Zachowaj obsługę wcześniejszych image_path i zasady widoczności usuniętych wpisów.
 
 - Od 0.87 przed publikacją wdroż 202610200005_helper_needs.sql. Dołączenie do pytania Pomocnika nie daje pXP; helper_support wiąże użytkownika przez auth.uid(), a get_helper_needs zwraca tylko licznik i własny stan. Wspólny dobór powtórek EduPractice jest w liga-platform.js, używany w treningach obu języków.
+
+## Zmiana zasad od 0.88 — jeden adres i lokalne ZIP
+- Zgodnie z wyraźną decyzją użytkownika oba adresy GitHub Pages /eduliga/ i /ortoliga/ mają publikować wyłącznie przekierowanie bezpośrednio do https://eduliga.web.app/. To zastępuje wcześniejsze zasady zachowania pełnej aplikacji na GitHub Pages. Kod nadal przechowuj w repozytoriach, ale ich index.html zastępuj ortoliga-redirect.html z właściwym numerem wydania. Nie przesyłaj hash, zapytań ani tokenów ze starej domeny; stare linki kont prowadzą do ponownego odzyskania dostępu na Firebase.
+- Przed każdą publikacją Firebase wykonuj Create-Backup.ps1 (wywoływany przez Deploy-Hosting.ps1). Lokalne ZIP kodu zapisuj w Kopie-zapasowe; nie publikuj ich ani nie dołączaj sekretów, tokenów, środowisk, node_modules i danych użytkowników. Nie usuwaj starszych kopii bez polecenia użytkownika.

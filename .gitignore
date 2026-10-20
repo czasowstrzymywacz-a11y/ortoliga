@@ -10,3 +10,6 @@ supabase/.temp/
 # Operating system/editor files
 .DS_Store
 Thumbs.db
+
+# Local source archives
+Kopie-zapasowe/

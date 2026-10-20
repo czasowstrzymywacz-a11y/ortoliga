@@ -33,5 +33,5 @@
  const priorEnglishTab=window.englishTab;window.englishTab=tab=>{if(document.body.dataset.activeLeague==='english'&&!document.getElementById('view-english').classList.contains('active'))showView('english');priorEnglishTab(tab);window.syncLeagueMenu?.();};
  const previousRender=renderAll;renderAll=()=>{previousRender();window.syncEnglishProgressFromAccount?.();dayStreak();const x=document.getElementById('ortho-xpo');if(x)x.textContent=points('ortho').toLocaleString('pl-PL')+' oXP';};
  new MutationObserver(dayStreak).observe(document.body,{attributes:true,attributeFilter:['data-active-league']});
- window.addEventListener('ortoliga-auth-change',()=>{window.LeagueArena?.leave();window.resetSpanishPractice?.();window.renderSpanishSummary?.();});
+ window.addEventListener('ortoliga-auth-change',()=>{window.resetSpanishPractice?.();window.renderSpanishSummary?.();});
 })();

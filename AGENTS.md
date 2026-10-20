@@ -26,3 +26,5 @@
 - Od 0.80 publikuj również eduliga-guests.js. Przed publikacją wdroż migrację 202610190002_guest_activity.sql. Statystyki gości są anonimowe i opcjonalne; panel odczytu jest tylko dla administratorów czatu.
 
 - Od 0.82 publikuj również eduliga-push.js i eduliga-push-sw.js. Przed publikacją wdroż migrację 202610190003_admin_push.sql oraz funkcję Edge admin-push. Funkcja weryfikuje sesję po stronie serwera; klucz prywatny Web Push pozostaje wyłącznie w tabeli serwera, bez dostępu użytkowników. Administrator włącza zgodę na każdym telefonie osobno.
+
+- Od 0.83 publikuj również eduliga-access.js i eduliga-diagnostics.js. Przed publikacją wdroż migrację 202610190004_diagnostics.sql. Diagnostyka przyjmuje wyłącznie zamknięty zestaw kodów zdarzeń; panel odczytu sprawdza is_chat_admin. Nigdy nie dodawaj do telemetrii haseł, tokenów, e-maili, wpisanych odpowiedzi ani treści rozmów.

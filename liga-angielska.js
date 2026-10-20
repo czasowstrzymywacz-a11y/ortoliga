@@ -43,7 +43,7 @@
     else if(type==='past-to-base')prompt='Uzupełnij 1. formę';
     else prompt='🇬🇧 Podaj znaczenie po polsku';
     box.hidden=false;box.innerHTML=`<div class="english-question-top"><span>PRÓBA ${round.index+1} / ${round.total}</span><span>✨ ${state.xp} aXP</span></div><div class="english-question-progress"><i style="width:${round.index/round.total*100}%"></i></div><div class="english-prompt"><span>${prompt}</span><button type="button" class="english-speak" aria-label="Odtwórz słowa z pytania" title="Odtwórz słowa z pytania" onclick="speakEnglishQuestion(${verb.id},'${type}')">🔊</button></div><form class="english-answer-form" onsubmit="submitEnglishAnswer(event)">${questionBoard(verb,type)}<p class="english-instruction">${type==='en-to-pl'?'Drobne literówki po polsku są akceptowane.':'Uzupełnij zaznaczone pole lub pola w tabeli.'}</p><div class="english-feedback" id="english-feedback" aria-live="polite"></div><button class="english-start" type="submit">Sprawdź odpowiedź <span>→</span></button></form><small class="english-no-timer">🌿 Bez pośpiechu — odpowiedz, kiedy będziesz gotowy.</small>`;
-    box.querySelector('input')?.focus();setTimeout(()=>speakEnglishQuestion(verb.id,type),220);if(round.battle)startBattleClock();
+    box.querySelector('input')?.focus();setTimeout(()=>{if(window.EduLearningPreferences?.automaticAudio()!==false)speakEnglishQuestion(verb.id,type);},220);if(round.battle)startBattleClock();
   }
   function speakEnglishQuestion(id,type){
     const v=VERBS.find(x=>x.id===id);if(!v||!('speechSynthesis'in window))return;window.speechSynthesis.cancel();

@@ -32,3 +32,5 @@
 - Od 0.84 publikuj również eduliga-members.js. Przed publikacją wdroż migracje 202610200001_member_activity.sql i 202610200002_push_delivery.sql oraz aktualizację funkcji admin-push. Statystyki zalogowanych odczytują wyłącznie administratorzy; zapis sesji przypisuje konto przez auth.uid(), nigdy przez identyfikator przesłany przez klienta. Nie publikuj endpointów subskrypcji, kluczy Web Push ani e-maili w raportach.
 
 - Od 0.85 przed publikacją wdroż migrację 202610200003_battle_rooms.sql. Bitwy używają uwierzytelnionych RPC do synchronizacji składu pokoju i krótkotrwałych pakietów gry. Identyfikator konta wyłącznie z auth.uid(); bez bezpośredniego dostępu klienta do tabel. Lista otwartych bitew jest w zakładce bitew czatu.
+
+- Od 0.86 przed publikacją wdroż migrację 202610200004_helper_photos.sql. Wiele zdjęć Pomocnika jest w helper_attachments, zapisywanych przez helper_post_images i helper_add_images. Dodatkowe zdjęcia dołącza wyłącznie autor wpisu; za dołączenie zdjęć nie przyznawaj ponownie pXP. Zachowaj obsługę wcześniejszych image_path i zasady widoczności usuniętych wpisów.

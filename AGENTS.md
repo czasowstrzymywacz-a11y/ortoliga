@@ -28,3 +28,5 @@
 - Od 0.82 publikuj również eduliga-push.js i eduliga-push-sw.js. Przed publikacją wdroż migrację 202610190003_admin_push.sql oraz funkcję Edge admin-push. Funkcja weryfikuje sesję po stronie serwera; klucz prywatny Web Push pozostaje wyłącznie w tabeli serwera, bez dostępu użytkowników. Administrator włącza zgodę na każdym telefonie osobno.
 
 - Od 0.83 publikuj również eduliga-access.js i eduliga-diagnostics.js. Przed publikacją wdroż migrację 202610190004_diagnostics.sql. Diagnostyka przyjmuje wyłącznie zamknięty zestaw kodów zdarzeń; panel odczytu sprawdza is_chat_admin. Nigdy nie dodawaj do telemetrii haseł, tokenów, e-maili, wpisanych odpowiedzi ani treści rozmów.
+
+- Od 0.84 publikuj również eduliga-members.js. Przed publikacją wdroż migracje 202610200001_member_activity.sql i 202610200002_push_delivery.sql oraz aktualizację funkcji admin-push. Statystyki zalogowanych odczytują wyłącznie administratorzy; zapis sesji przypisuje konto przez auth.uid(), nigdy przez identyfikator przesłany przez klienta. Nie publikuj endpointów subskrypcji, kluczy Web Push ani e-maili w raportach.

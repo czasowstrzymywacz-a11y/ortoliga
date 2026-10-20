@@ -1,11 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
-const cors={"Access-Control-Allow-Origin":"https://eduliga.web.app","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
-const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+const corsBase={"Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+
 function mapped(name:string,prefix:string){try{return Object.values(JSON.parse(Deno.env.get(name)||"{}")).find(v=>typeof v==="string"&&v.startsWith(prefix)) as string|undefined;}catch{return undefined;}}
 async function digest(s:string){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');}
 function validSubscription(s:any){try{const u=new URL(s?.endpoint);return u.protocol==='https:'&&['fcm.googleapis.com','android.googleapis.com'].includes(u.hostname)&&!u.port&&!u.username&&!u.password&&!u.hash&&s.endpoint.length<1800&&/^[A-Za-z0-9_-]{80,100}$/.test(s.keys?.p256dh)&&/^[A-Za-z0-9_-]{20,30}$/.test(s.keys?.auth);}catch{return false;}}
 Deno.serve(async request=>{
+ const origin=request.headers.get('origin')||'https://eduliga.web.app';
+ const cors={...corsBase,'Access-Control-Allow-Origin':['https://eduliga.web.app','https://czasowstrzymywacz-a11y.github.io'].includes(origin)?origin:'https://eduliga.web.app','Vary':'Origin'};
+ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});
  if(request.method==='OPTIONS')return new Response('ok',{headers:cors});
  if(request.method!=='POST')return json({error:'Użyj POST.'},405);
  try{
@@ -52,7 +55,7 @@ Deno.serve(async request=>{
    const r=await admin.rpc('claim_student_activity_notice',{p_user_id:user.id,p_league:league});if(r.error)throw r.error;if(!r.data?.notify)return json({ok:true});
    const list=await admin.rpc('get_admin_push_targets',{p_exclude:user.id});if(list.error)throw list.error;
    const names:Record<string,string>={ortho:'OrtoLidze',english:'Lidze Angielskiej',spanish:'Lidze Hiszpańskiej',helper:'Lidze Pomocnika',none:'EduLidze'};
-   await send(list.data||[],{title:'EduLiga · użytkownik aktywny',body:r.data.name+' rozpoczął aktywność w '+names[league]+'.',tag:'eduliga-active-'+user.id,url:'https://eduliga.web.app/?admin-notifications=1'},await keys());return json({ok:true});
+   const delivery=await send(list.data||[],{title:'EduLiga · użytkownik aktywny',body:r.data.name+' rozpoczął aktywność w '+names[league]+'.',tag:'eduliga-active-'+user.id,url:'https://eduliga.web.app/?admin-notifications=1'},await keys());await admin.rpc('record_push_delivery',{p_user_id:user.id,p_targets:list.data?.length||0,p_sent:delivery.sent,p_failed:delivery.failed});return json({ok:true});
   }
   return json({error:'Nieznana operacja.'},400);
  }catch{console.error('Admin push request failed');return json({error:'Powiadomienia chwilowo niedostępne. Spróbuj ponownie.'},503);}

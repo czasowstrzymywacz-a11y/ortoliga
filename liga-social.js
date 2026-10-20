@@ -78,7 +78,7 @@
   inviteStates.set(stateKey,{label:'Łączenie…',until:Infinity});refreshRoster();status('Wchodzę do pokoju bitew…');
   try{
    await window.ensureLeagueBattleRoom(key);if(currentUser()?.id!==id||sequence!==generation)return;
-   const {data:inviteId,error}=await client().rpc('send_topic_battle_invitation',{p_recipient_id:targetId,p_league:key,p_topic:window.learningTopic?.(key)||'part1'});
+   const {data:inviteId,error}=await client().rpc('send_topic_battle_invitation',{p_recipient_id:targetId,p_league:key,p_topic:window.LeagueArena.current()?.topic||window.learningTopic?.(key)||'part1'});
    if(currentUser()?.id!==id||sequence!==generation)return;if(error)throw error;if(!inviteId)throw new Error('Serwer nie potwierdził zaproszenia.');
    const sent={label:'Zaproszono ✓',until:Date.now()+20000};inviteStates.set(stateKey,sent);refreshRoster();
    picker.close();status('Zaproszenie do '+(profile?.display_name||'użytkownika')+' zapisane. Odbiorca zobaczy je przy dzwonku.');
@@ -89,10 +89,10 @@
   const invite=invitations.find(x=>x.id===id),user=currentUser(),sequence=generation;if(!invite||!user||busy.has(id))return;
   if(Date.parse(invite.expires_at)<=Date.now()){render();return;}busy.add(id);errors.delete(id);render();
   try{
-   if(accept){window.selectLearningTopic?.(invite.league||'english',invite.topic||'part1');await window.ensureLeagueBattleRoom(invite.league||'english');}
+   if(accept){await window.ensureLeagueBattleRoom(invite.league||'english',invite.topic||'part1');}
    if(sequence!==generation||currentUser()?.id!==user.id)return;
    const {error}=await client().rpc('respond_english_battle_invitation',{p_invitation_id:id,p_accept:accept});if(sequence!==generation)return;if(error)throw error;
-   handled.add(id);invitations=invitations.filter(x=>x.id!==id);if(accept){open=false;toast.hidden=true;status('Dołączono do pokoju. Zaproszenie od '+invite.sender_name+' przyjęte.');}render();void poll();
+   handled.add(id);invitations=invitations.filter(x=>x.id!==id);if(accept){open=false;toast.hidden=true;window.closeCommunityChat?.();status('Dołączono do pokoju. Zaproszenie od '+invite.sender_name+' przyjęte.');}render();void poll();
   }catch(error){if(sequence===generation)errors.set(id,error.message||'Nie udało się dołączyć. Spróbuj ponownie.');}
   finally{if(sequence===generation){busy.delete(id);render();}}
  }

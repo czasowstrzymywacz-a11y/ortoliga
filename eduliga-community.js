@@ -10,6 +10,30 @@
  const tabs=document.createElement('nav');tabs.className='community-tabs';tabs.setAttribute('aria-label','Wybór rozmowy');
  const privatePane=document.createElement('section');privatePane.className='community-private';privatePane.hidden=true;
  const invitationPane=document.createElement('section');invitationPane.className='community-invitations';invitationPane.hidden=true;
+ const battleRooms=document.createElement('section');battleRooms.className='community-battle-rooms';invitationPane.append(battleRooms);let roomsBusy=false,roomJoinBusy=false,roomListGeneration=0;
+ const battleTopic=topic=>({'part1':'Nieregularne · część 1 · be–feel','part2':'Nieregularne · część 2 · fight–lose','all':'Nieregularne · obie części','tenses':'Present Simple / Continuous / Past Simple','lesson-20261019':'Słówka z lekcji · 19.10.2026','everyday':'Poznajmy się'})[topic]||'Ortografia';
+ async function loadBattleRooms(){
+  if(roomsBusy||roomJoinBusy||!opened()||tab!=='invites'||document.hidden)return;
+  const account=user()?.id,seq=++roomListGeneration;
+  if(!account){battleRooms.innerHTML='<h3>⚔️ Otwarte bitwy</h3><p>Zaloguj się, aby dołączyć do innych graczy.</p>';return;}
+  roomsBusy=true;
+  try{
+   const response=await client().rpc('list_active_battle_rooms');if(seq!==roomListGeneration||user()?.id!==account)return;if(response.error)throw response.error;
+   const rooms=(response.data||[]).filter(r=>window.LeagueApp.configs[r.league]);
+   battleRooms.innerHTML='<header><div><h3>⚔️ Dołącz do bitwy</h3><small>Otwarte pokoje · lista odświeża się automatycznie</small></div><button type="button" class="secondary" data-refresh-rooms aria-label="Odśwież bitwy">↻</button></header>'+(rooms.length?rooms.map(r=>'<article class="battle-room-card"><div class="battle-room-league">'+window.LeagueApp.configs[r.league].logo+'<b>'+esc(window.LeagueApp.configs[r.league].name)+'</b><span>'+Number(r.count)+' gr.</span></div><strong>'+esc(r.league==='ortho'?'Ortografia · słowa z lukami':battleTopic(r.topic))+'</strong><p>'+esc(r.players.map(p=>p.name+(p.id===account?' (Ty)':'')).join(' · '))+'</p><small>'+(r.phase==='question'?'🟢 Trwa runda '+Number(r.round)+'/10':r.phase==='results'?'🏁 Wyniki rundy '+Number(r.round)+'/10':'🟡 Czekamy na rywali')+'</small><button type="button" class="primary" data-join-room-league="'+esc(r.league)+'" data-join-room-topic="'+esc(r.topic)+'">'+(r.players.some(p=>p.id===account)?'Wróć do bitwy →':'Dołącz →')+'</button></article>').join(''):'<p class="battle-rooms-empty">Nikt jeszcze nie czeka. Otwórz wybraną ligę → Bitwa → Wejdź. Twój pokój pojawi się tutaj innym graczom.</p>')+'<p class="battle-room-status" role="status"></p>';
+   battleRooms.querySelector('[data-refresh-rooms]').onclick=()=>void loadBattleRooms();
+   battleRooms.querySelectorAll('[data-join-room-league]').forEach(button=>button.onclick=async()=>{
+    if(roomJoinBusy)return;roomJoinBusy=true;button.textContent='Łączenie…';battleRooms.querySelectorAll('button').forEach(b=>b.disabled=true);
+    try{await window.ensureLeagueBattleRoom(button.dataset.joinRoomLeague,button.dataset.joinRoomTopic);if(user()?.id===account)setOpen(false);}
+    catch(error){battleRooms.querySelector('.battle-room-status').textContent=error.message||'Nie udało się dołączyć. Spróbuj ponownie.';button.textContent='Spróbuj ponownie →';}
+    finally{roomJoinBusy=false;battleRooms.querySelectorAll('button').forEach(b=>b.disabled=false);}
+   });
+  }catch{if(seq===roomListGeneration&&user()?.id===account)battleRooms.innerHTML='<h3>⚔️ Otwarte bitwy</h3><p role="status">Nie udało się pobrać pokojów. Ponawiam połączenie…</p>';}
+  finally{roomsBusy=false;}
+ }
+ window.closeCommunityChat=()=>setOpen(false);
+ window.openActiveBattleRooms=()=>{selectTab('invites');setOpen(true);void loadBattleRooms();};
+ setInterval(()=>void loadBattleRooms(),5000);
  invitationPane.append(document.getElementById('battle-invite-notifications'));
  const helperPane=document.createElement('section');helperPane.className='community-helper';helperPane.hidden=true;const suggestionPane=document.createElement('section');suggestionPane.className='community-suggestions';suggestionPane.hidden=true;const signupPane=document.createElement('section');signupPane.className='community-signups';signupPane.hidden=true;hub.append(tabs,common,privatePane,invitationPane,helperPane,suggestionPane);
  let adminPushLink=new URLSearchParams(location.search).get('admin-notifications')==='1';
@@ -34,7 +58,7 @@
   fab.innerHTML='<span aria-hidden="true">'+(opened()?'×':kind==='battle'?'⚔️':kind==='signup'?'👤':kind==='idea'?'💡':kind==='helper'?'🤝':kind==='message'?'✉️':'💬')+'</span>'+badge(n)+'<i class="community-notice-marks">'+(invites.length?'<em>⚔️</em>':'')+(hn?'<em>🤝</em>':'')+(unread()+commonUnread?'<em>✉️</em>':'')+'</i>';
   fab.setAttribute('aria-label',(opened()?'Zamknij':'Otwórz')+' rozmowy i powiadomienia'+(n?' · '+n+' nowych':''));
   fab.setAttribute('aria-expanded',String(opened()));
-  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="sr-only">Zaproszenia</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'" title="Pomysły na rozwój aplikacji" aria-label="Pomysły na rozwój aplikacji">💡 <span class="sr-only">Pomysły</span></button>';
+  tabs.innerHTML='<button data-community-tab="common" aria-pressed="'+(tab==='common')+'">Wspólny '+badge(commonUnread)+'</button><button data-community-tab="private" aria-pressed="'+(tab==='private')+'">Prywatne '+badge(unread())+'</button><button data-community-tab="invites" aria-pressed="'+(tab==='invites')+'">⚔️ '+badge(invites.length)+'<span class="community-battle-label">Bitwy</span></button><button data-community-tab="helper" aria-pressed="'+(tab==='helper')+'">🤝 '+badge(hn)+'<span class="sr-only">Prośby o pomoc</span></button><button data-community-tab="suggestions" aria-pressed="'+(tab==='suggestions')+'" title="Pomysły na rozwój aplikacji" aria-label="Pomysły na rozwój aplikacji">💡 <span class="sr-only">Pomysły</span></button>';
   tabs.querySelectorAll('[data-community-tab]').forEach(b=>b.onclick=()=>selectTab(b.dataset.communityTab));
  }
  function helperUnread(){return helperRows.filter(t=>t.author_id!==owner&&!helperRead.has(t.id)).length;}
@@ -67,12 +91,12 @@
  function setOpen(value){
   if(!value)rememberDraft();document.body.classList.toggle('mobile-chat-open',value);
   if(value){void loadInbox();void loadHelper();void loadSignups();if(tab==='suggestions')window.EduSuggestions?.open();if(tab==='helper')renderHelper(true);if(tab==='common'){commonUnread=0;void window.refreshClassChatMessages?.();setTimeout(()=>{const box=document.getElementById('chat-messages');box.scrollTop=box.scrollHeight;},80);}if(tab==='private'&&peer)void loadThread();}
-  window.setBattleNotificationsOpen?.(value&&tab==='invites');paintIcon();if(!value)fab.focus({preventScroll:true});
+  window.setBattleNotificationsOpen?.(value&&tab==='invites');if(value&&tab==='invites')void loadBattleRooms();paintIcon();if(!value)fab.focus({preventScroll:true});
  }
  window.openAdminNotifications=()=>{adminPushLink=true;void loadSignups();if(signupAdmin){adminPushLink=false;openAdmin('push');}};
  function selectTab(next){
   rememberDraft();tab=next;if(next==='common'&&opened())commonUnread=0;common.hidden=next!=='common';privatePane.hidden=next!=='private';invitationPane.hidden=next!=='invites';helperPane.hidden=next!=='helper';suggestionPane.hidden=next!=='suggestions';if(next==='suggestions')window.EduSuggestions?.open();if(next==='helper'){renderHelper(opened());void loadHelper();}
-  window.setBattleNotificationsOpen?.(opened()&&next==='invites');
+  window.setBattleNotificationsOpen?.(opened()&&next==='invites');if(next==='invites')void loadBattleRooms();
   if(next==='private'){if(peer)renderThread();else renderPeople();}if(next==='common')void window.refreshClassChatMessages?.();paintIcon();
  }
  function inviteCards(id){

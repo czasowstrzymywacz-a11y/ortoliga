@@ -42,3 +42,5 @@
 - Przed każdą publikacją Firebase wykonuj Create-Backup.ps1 (wywoływany przez Deploy-Hosting.ps1). Lokalne ZIP kodu zapisuj w Kopie-zapasowe; nie publikuj ich ani nie dołączaj sekretów, tokenów, środowisk, node_modules i danych użytkowników. Nie usuwaj starszych kopii bez polecenia użytkownika.
 
 - Od 0.89 publikuj liga-matematyczna.js i liga-matematyczna.css. Przed frontendem wdroż 202610210001_math_league.sql. Postępy matematyki w mathLeague, punkty mXP. Pokój math/divisibility korzysta z istniejących RPC, bez zmian uprawnień. Trening i bitwa wymagają pełnego zestawu dzielników, 2 jest także liczbą pierwszą; 1 nie jest pierwsza.
+
+- Od 0.90 fiszki nie przyznają XP, również za „Umiem”. Nie odbieraj automatycznie dawnych nagród. get_league_point_history rozpoznaje kind adjustment (202610210002_point_adjustment_history.sql). Indywidualne korekty kont zapisuj jako pojedyncze zdarzenia z unikalnym ID; prywatnych identyfikatorów kont ani operacyjnych zapytań nie publikuj w repozytoriach.

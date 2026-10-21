@@ -261,3 +261,6 @@ Create-Backup.ps1 tworzy lokalny Kopie-zapasowe/EduLiga-kod-vNUMER_DATA.zip prze
 
 ## Wydanie 0.89 — Liga Matematyczna
 Przed publikacją wdroż supabase/migrations/202610210001_math_league.sql. Migracja rozszerza istniejące funkcje rankingów, historii i zaproszeń oraz battle_room_sync dla math/divisibility, zachowując auth.uid(), security definer, search_path i obecne granty. mathLeague przechowuje zdarzenia i statystyki; łączenie między urządzeniami deduplikuje ID tak jak hiszpański. Osiem fiszek i dwa typy zadań, wszystkie poprawne dzielniki z listy, liczba pierwsza osobnym wyborem; 2 wymaga obu odpowiedzi. 1 i np. 49 wymagają „żadna z podanych”. Trening +10/−5, bitwa dotychczasowa punktacja za pokonanych i bonus czasu. Publikuj oba nowe zasoby JS/CSS.
+
+## Wydanie 0.90 — fiszki bez XP
+Hiszpańskie Umiem przechodzi do następnej fiszki bez zapisu nagrody. LeagueApp.record odrzuca flash jako dodatkową ochronę wspólnej punktacji. Fiszki innych lig już nie nagradzały XP. Historyczne nagrody pozostają. Migracja 202610210002_point_adjustment_history.sql dodaje adjustment do bezpiecznej listy typów historii; widoczny opis Korekta punktów. Jednorazowe korekty kont są odrębnymi zdarzeniami dodatnimi, deduplikowanymi przez ID podczas synchronizacji. Brak zmian w uprawnieniach, tabelach i kontrakcie odpowiedzi RPC.

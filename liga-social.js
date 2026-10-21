@@ -144,7 +144,7 @@
    if(error)throw error;
    const history=key==='helper'?rows||[]:selectedId===viewer?localRows(key):rows||[];
    const entries=history.filter(r=>Number(r.points)>0).sort((a,b)=>String(b.occurred_at||b.earned_date||'').localeCompare(String(a.occurred_at||a.earned_date||''))).slice(0,30);
-   const labels={reply:'Odpowiedź pomocnika',helpful:'Pomoc przyjęta',answer:'Trening',battle:'Bitwa',flash:'Fiszka',sentence:'Układanie zdań',dictation:'Dyktando'};
+   const labels={adjustment:'Korekta punktów',reply:'Odpowiedź pomocnika',helpful:'Pomoc przyjęta',answer:'Trening',battle:'Bitwa',flash:'Fiszka',sentence:'Układanie zdań',dictation:'Dyktando'};
    root.innerHTML=entries.length?'<ol class="point-history-list">'+entries.map(r=>'<li><div><b>'+esc(labels[r.kind]||'Nauka')+'</b><small>'+esc(timeLabel(r))+'</small></div><strong>+'+Number(r.points).toLocaleString('pl-PL')+' '+cfg.unit+'</strong></li>').join('')+'</ol>':'<p>Brak zapisanych zdarzeń zdobycia punktów w tej lidze. Starsze punkty bez rejestru pozostają w rankingu.</p>';
   }catch{if(n===request)root.innerHTML='<p>Nie udało się pobrać historii.</p><button type="button" class="secondary">Spróbuj ponownie</button>';const retry=root.querySelector('button');if(retry)retry.onclick=()=>load(selectedLeague);}
  }

@@ -1,10 +1,10 @@
 /* Three battle rooms: shared countdown, visible totals, late joins and idempotent awards. */
 (() => {
- const A=LeagueApp,boards={ortho:'arena-ortho',english:'arena-english',spanish:'arena-spanish'};
+ const A=LeagueApp,boards={ortho:'arena-ortho',english:'arena-english',spanish:'arena-spanish',math:'arena-math'};
  let room=null,timer=null,stateTimer=null,tickTimer=null,lastSpoken=null,retryTimer=null,startTimer=null;
  const uid=()=>A.user()?.id,name=()=>A.user()?.user_metadata?.display_name||'Zawodnik';
  const roundLimit=(key=room?.league)=>key==='english'&&(room?.league===key?room.topic:window.learningTopic?.(key))==='tenses'?90000:30000;
- const scope=key=>key==='ortho'?'part1':window.learningTopic?.(key)||(key==='spanish'?'everyday':'all');
+ const scope=key=>key==='math'?'divisibility':key==='ortho'?'part1':window.learningTopic?.(key)||(key==='spanish'?'everyday':'all');
  const shuffle=list=>[...list].sort(()=>Math.random()-.5);
  function orthoTasks(){
   const extra=[{word:'historii',example:'Opowiadamy o historii miasta.'},{word:'lekcji',example:'Po lekcji wracamy do domu.'},{word:'nadziei',example:'Nie tracimy nadziei.'}];
@@ -18,7 +18,7 @@
  }
  const ortho=orthoTasks();
  function validTask(key,t){
-  if(!t)return null;if(key==='ortho')return ortho.find(x=>x.id===t.id)||null;
+  if(!t)return null;if(key==='math')return window.MathLeague?.find(t.id)||null;if(key==='ortho')return ortho.find(x=>x.id===t.id)||null;
   if(key==='spanish'){const w=SPANISH_WORDS.find(w=>w.id===t.id);return w?{id:w.id,word:w.id,prompt:w.pl,wants:[w.es]}:null;}
   if(window.learningTopic?.('english')==='lesson-20261019')return window.EnglishLesson?.find(t.id)||null;
   if(window.learningTopic?.('english')==='tenses')return window.EnglishTenses?.find(t.id)||null;
@@ -26,7 +26,7 @@
   if(!v||!['pl-to-pair','base-to-past','past-to-base','en-to-pl'].includes(m))return null;
   return {id:v.id,word:v.id,mode:m,prompt:m==='pl-to-pair'?v.pl:m==='base-to-past'?v.base:m==='past-to-base'?v.past:v.base+' · '+v.past,wants:m==='pl-to-pair'?[v.base,v.past]:m==='base-to-past'?[v.past]:m==='past-to-base'?[v.base]:[v.pl]};
  }
- function taskFor(key){
+ function taskFor(key){if(key==='math')return window.MathLeague.pick();
   if(key==='ortho')return ortho[Math.floor(Math.random()*ortho.length)];
   if(key==='spanish')return validTask(key,{id:SPANISH_WORDS[Math.floor(Math.random()*SPANISH_WORDS.length)].id});
   if(window.learningTopic?.('english')==='lesson-20261019')return window.EnglishLesson.pick();
@@ -34,7 +34,7 @@
   const pool=window.getEnglishVocabulary?.()||window.ENGLISH_VERBS,v=pool[Math.floor(Math.random()*pool.length)],modes=/[\s/()]/.test(v.pl)?['pl-to-pair','base-to-past','past-to-base']:['pl-to-pair','base-to-past','past-to-base','en-to-pl'];
   return validTask(key,{id:v.id,mode:modes[Math.floor(Math.random()*modes.length)]});
  }
- function correctness(key,t,answers){return t.wants.map((want,i)=>key==='spanish'?window.spanishAnswerCorrect(answers[i],want):key==='english'?String(t.id).startsWith('tense-')?window.EnglishTenses.correct(answers[i],want):window.englishAnswerCorrect(answers[i],want,t.mode):answers[i]===want);}
+ function correctness(key,t,answers){if(key==='math')return [window.MathLeague.correct(t,answers[0])];return t.wants.map((want,i)=>key==='spanish'?window.spanishAnswerCorrect(answers[i],want):key==='english'?String(t.id).startsWith('tense-')?window.EnglishTenses.correct(answers[i],want):window.englishAnswerCorrect(answers[i],want,t.mode):answers[i]===want);}
  function remember(){if(!room)return;try{const saved={...state(),startAt:room.startAt+offset(),starts:Object.fromEntries(Object.entries(room.starts).map(([id,time])=>[id,time+offset()]))};sessionStorage.setItem('eduliga-arena:'+room.owner+':'+room.league+':'+room.topic,JSON.stringify({at:Date.now(),topic:room.topic,state:saved,localAnswer:room.localAnswer,draft:room.draft||[]}));}catch{window.EduDiagnostics?.record('local_storage_failed');}}
  function cached(owner,key,topic){try{const r=JSON.parse(sessionStorage.getItem('eduliga-arena:'+owner+':'+key+':'+topic)||'null');if(r&&Date.now()-r.at<600000&&r.state?.match&&r.state.league===key&&['question','results'].includes(r.state.phase)&&r.state.round>=1&&r.state.round<=10&&Array.isArray(r.state.roster)&&r.state.answers&&r.state.results&&r.state.scores&&r.state.names&&r.state.starts&&r.state.roundTasks&&Number.isFinite(r.state.startAt)&&Number.isFinite(r.state.revision)){const t=validTask(key,r.state.task);if(t)return {...r,state:{...r.state,task:t}};}}catch{}return null;}
  function emit(p){
@@ -147,7 +147,7 @@ const players={};
   if(node&&String(room.task.id).startsWith('tense-')&&window.EnglishTenses.answerText(room.task).includes(' = '))node.innerHTML+='<p>Pełna forma i skrót znaczą to samo.</p>';
   if(node&&(skipped||!correct.every(Boolean)))node.innerHTML+=taskWhy(room.task);
   correct.forEach((ok,i)=>{if(ok)window.celebrateAnswer?.(document.getElementById('arena-answer-'+i)||node);});
-  root()?.querySelectorAll('.arena-answer,.arena-choice,.arena-skip,button[type=submit]').forEach(x=>x.disabled=true);
+  root()?.querySelectorAll('.arena-answer,.arena-choice,.math-answers input,.arena-skip,button[type=submit]').forEach(x=>x.disabled=true);
   const payload={kind:'answer',match:room.match,round:room.round,answers,skipped,elapsed:Math.max(0,Math.min(roundLimit(),Date.now()-(room.starts[uid()]||room.startAt)-offset())),sender:uid()};room.localAnswer=payload;emit(payload);if(room.host===uid()&&room.transportReady&&navigator.onLine)receive(payload);connectionUi();
  }
  function settle(){
@@ -174,8 +174,8 @@ const players={};
   return '<div class="english-prompt"><span>Uzupełnij luki</span><button type="button" class="english-speak" aria-label="Odtwórz podane słowa" onclick="speakEnglishQuestion('+v.id+',\''+t.mode+'\')">🔊</button></div>'+window.englishQuestionBoard(v,t.mode).replace(/class="english-answer /g,'class="arena-answer english-answer ').replace(/data-answer="(\d+)"/g,'id="arena-answer-$1" data-answer="$1"');
  }
  function correctRound(r){return !!r&&!r.skipped&&r.correct?.length>0&&r.correct.every(Boolean);}
- function taskWhy(t){if(String(t.id).startsWith('lesson-'))return window.EnglishLesson.why(t);if(String(t.id).startsWith('tense-'))return window.EnglishTenses.ruleFeedback(t);let text;if(room.league==='ortho')text=(typeof league!=='undefined'?league.lookup(t.word)?.rule:null)||'Poprawny zapis to '+t.word+'. Porównaj brakujące litery z pełnym wyrazem.';else if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);text=v?v.base+' → '+v.past+' to zapamiętywana para form czasownika nieregularnego. Znaczenie: '+v.pl+'.':'Porównaj poprawne formy ze swoim zapisem.';}else text=t.prompt+' po hiszpańsku to '+t.wants[0]+'. Zwróć uwagę na dokładny zapis liter i akcentów.';return window.learningWhy?.(text)||'';}
- function taskCorrection(t){if(!t)return '';if(String(t.id).startsWith('lesson-'))return '<p>'+A.esc(t.pl)+' → <b>'+A.esc(t.en)+'</b></p>';if(String(t.id).startsWith('tense-'))return '<p>'+A.esc(t.sentence.replace('___',t.wants[0]))+'</p><small>'+A.esc(window.EnglishTenses.answerText(t))+'</small>';if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);return v?'<p>PL: '+A.esc(v.pl)+' · 1: <b>'+A.esc(v.base)+'</b> · 2: <b>'+A.esc(v.past)+'</b></p>':'';}return '<p>'+A.esc(room.league==='ortho'?t.sentence:t.prompt+' → '+t.wants[0])+'</p>';}
+ function taskWhy(t){if(room.league==='math')return window.learningWhy?.(window.MathLeague.explain(t))||'';if(String(t.id).startsWith('lesson-'))return window.EnglishLesson.why(t);if(String(t.id).startsWith('tense-'))return window.EnglishTenses.ruleFeedback(t);let text;if(room.league==='ortho')text=(typeof league!=='undefined'?league.lookup(t.word)?.rule:null)||'Poprawny zapis to '+t.word+'. Porównaj brakujące litery z pełnym wyrazem.';else if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);text=v?v.base+' → '+v.past+' to zapamiętywana para form czasownika nieregularnego. Znaczenie: '+v.pl+'.':'Porównaj poprawne formy ze swoim zapisem.';}else text=t.prompt+' po hiszpańsku to '+t.wants[0]+'. Zwróć uwagę na dokładny zapis liter i akcentów.';return window.learningWhy?.(text)||'';}
+ function taskCorrection(t){if(!t)return '';if(room.league==='math')return '<p>'+A.esc(t.prompt)+' → <b>'+A.esc(t.wants[0])+'</b></p>';if(String(t.id).startsWith('lesson-'))return '<p>'+A.esc(t.pl)+' → <b>'+A.esc(t.en)+'</b></p>';if(String(t.id).startsWith('tense-'))return '<p>'+A.esc(t.sentence.replace('___',t.wants[0]))+'</p><small>'+A.esc(window.EnglishTenses.answerText(t))+'</small>';if(room.league==='english'){const v=window.ENGLISH_VERBS.find(v=>v.id===t.id);return v?'<p>PL: '+A.esc(v.pl)+' · 1: <b>'+A.esc(v.base)+'</b> · 2: <b>'+A.esc(v.past)+'</b></p>':'';}return '<p>'+A.esc(room.league==='ortho'?t.sentence:t.prompt+' → '+t.wants[0])+'</p>';}
  function roundReview(n){const rows=room.results[n],t=room.roundTasks[n];if(!rows||!t)return '';const mine=rows.find(r=>r.id===uid()),bad=mine&&!correctRound(mine);return '<section class="arena-review"><h3>Runda '+n+' · '+(bad?'Twój błąd — zobacz poprawny zapis':mine?'Twoja odpowiedź poprawna':'Przebieg rundy')+'</h3><div class="arena-correction">'+taskCorrection(t)+'</div>'+(mine?'<p class="arena-own-answer '+(bad?'bad':'good')+'">'+(mine.skipped?'Nie wiem / brak odpowiedzi':(bad?'Twoja odpowiedź: ':'✓ Twoja odpowiedź: ')+A.esc(mine.answers.join(' · ')))+' · <b>'+mine.points+' '+A.configs[room.league].unit+'</b></p>':'')+taskWhy(t)+'<details class="learning-why arena-review-all"><summary>Odpowiedzi wszystkich zawodników</summary>'+rows.map(r=>'<p class="'+(correctRound(r)?'good':'bad')+'"><b>'+(correctRound(r)?'✓ ':'✗ ')+A.esc(r.name)+'</b> · '+(r.skipped?'Nie wiem / brak odpowiedzi':A.esc(r.answers.join(' · ')))+' · '+r.points+' '+A.configs[room.league].unit+' · '+(Math.round(r.elapsed/100)/10)+' s</p>').join('')+'</details></section>';}
  function liveScores(){
   const ids=[...new Set([...Object.keys(room.players),...Object.keys(room.scores)])].sort((a,b)=>(room.scores[b]||0)-(room.scores[a]||0)||a.localeCompare(b)),unit=A.configs[room.league].unit,colors=['#a789eb','#46b6d4','#efa54b','#72bb78','#e776a6','#7f99ee','#cb9562','#5ab5a0'],done=Object.keys(room.results).map(Number).filter(n=>n>=1&&n<=10).sort((a,b)=>a-b),last=done.at(-1)||0;
@@ -195,7 +195,7 @@ const players={};
  }
  function readSentence(){if(room?.league==='ortho'&&room.task)A.speech(room.task.sentence,'pl-PL');}
  function renderProgress(){
-  if(room.transportReady&&!room.answered&&room.roster.includes(uid())&&Date.now()>=(room.starts[uid()]||room.startAt)+offset())root()?.querySelectorAll('.arena-answer,.arena-choice,.arena-skip,button[type=submit]').forEach(x=>x.disabled=false);connectionUi();const p=root()?.querySelector('.arena-progress');if(p)p.textContent='Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length;
+  if(room.transportReady&&!room.answered&&room.roster.includes(uid())&&Date.now()>=(room.starts[uid()]||room.startAt)+offset())root()?.querySelectorAll('.arena-answer,.arena-choice,.math-answers input,.arena-skip,button[type=submit]').forEach(x=>x.disabled=false);connectionUi();const p=root()?.querySelector('.arena-progress');if(p)p.textContent='Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length;
   const scores=root()?.querySelector('.arena-race');if(scores)scores.outerHTML=liveScores();tick();
  }
  function render(){
@@ -206,32 +206,32 @@ const players={};
    if(!room.roster.includes(uid()))content='<p>Ta runda się kończy. Jesteś w pokoju — dołączysz do kolejnej.</p>';
    else {
     const t=room.task,disabled=room.answered?'disabled':'';
-    const prompt=room.league==='english'?englishBoard(t):'<div class="arena-prompt"><small>'+(room.league==='ortho'?'Wybierz zapis do luki':'Polski → Hiszpański')+'</small>'+(room.league==='ortho'?'<p class="arena-sentence">'+A.esc(t.context)+'</p><h2>'+A.esc(t.prompt)+'</h2><button type="button" class="secondary" onclick="readBattleSentence()">🔊 Całe zdanie</button>':'<h2>'+A.esc(t.prompt)+'</h2>')+'</div>';
-    const controls=t.options?'<div class="arena-options">'+shuffle(t.options).map(x=>'<button type="button" class="arena-choice" data-arena-option="'+A.esc(x)+'" '+disabled+'>'+A.esc(x)+'</button>').join('')+'</div>':room.league==='english'?'':'<div class="arena-inputs"><label>Hiszpański<input id="arena-answer-0" class="arena-answer" required autocomplete="off" autocapitalize="none" spellcheck="false" '+disabled+'></label></div>'+window.spanishKeyboard('arena-answer-0');
-    content='<p class="arena-progress">Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length+'</p><div class="arena-countdown" role="timer" aria-live="off"><span>Do końca rundy</span><strong>'+(roundLimit()/1000)+' s</strong><i></i></div><form class="arena-form">'+prompt+controls+(t.options?'':'<button class="primary" type="submit" '+disabled+'>Odpowiadam →</button>')+'<button type="button" class="secondary arena-skip" onclick="skipLeagueBattleAnswer()" '+disabled+'>Nie wiem →</button><div class="arena-feedback" aria-live="polite">'+(room.answered?'<p>'+A.esc(room.answers[uid()]?'✓ Pokój potwierdził odpowiedź. Czekamy na koniec rundy.':'Odpowiedź zachowana na urządzeniu. Czekam na potwierdzenie pokoju.')+'</p>':'')+'</div></form>';
+    const prompt=room.league==='math'?'<div class="arena-prompt"><small>'+A.esc(t.mode==='number'?'Zaznacz wszystkie poprawne odpowiedzi':'Rozpoznaj zasadę')+'</small><h2>'+A.esc(t.prompt)+'</h2></div>':room.league==='english'?englishBoard(t):'<div class="arena-prompt"><small>'+(room.league==='ortho'?'Wybierz zapis do luki':'Polski → Hiszpański')+'</small>'+(room.league==='ortho'?'<p class="arena-sentence">'+A.esc(t.context)+'</p><h2>'+A.esc(t.prompt)+'</h2><button type="button" class="secondary" onclick="readBattleSentence()">🔊 Całe zdanie</button>':'<h2>'+A.esc(t.prompt)+'</h2>')+'</div>';
+    const controls=room.league==='math'?window.MathLeague.controls(t,disabled):t.options?'<div class="arena-options">'+shuffle(t.options).map(x=>'<button type="button" class="arena-choice" data-arena-option="'+A.esc(x)+'" '+disabled+'>'+A.esc(x)+'</button>').join('')+'</div>':room.league==='english'?'':'<div class="arena-inputs"><label>Hiszpański<input id="arena-answer-0" class="arena-answer" required autocomplete="off" autocapitalize="none" spellcheck="false" '+disabled+'></label></div>'+window.spanishKeyboard('arena-answer-0');
+    content='<p class="arena-progress">Odpowiedziało '+Object.keys(room.answers).length+' / '+room.roster.length+'</p><div class="arena-countdown" role="timer" aria-live="off"><span>Do końca rundy</span><strong>'+(roundLimit()/1000)+' s</strong><i></i></div><form class="arena-form">'+prompt+controls+(t.options&&room.league!=='math'?'':'<button class="primary" type="submit" '+disabled+'>Odpowiadam →</button>')+'<button type="button" class="secondary arena-skip" onclick="skipLeagueBattleAnswer()" '+disabled+'>Nie wiem →</button><div class="arena-feedback" aria-live="polite">'+(room.answered?'<p>'+A.esc(room.answers[uid()]?'✓ Pokój potwierdził odpowiedź. Czekamy na koniec rundy.':'Odpowiedź zachowana na urządzeniu. Czekam na potwierdzenie pokoju.')+'</p>':'')+'</div></form>';
    }
   }
   if(room.phase==='results')content='<div class="arena-round-end"><h2>'+(room.round===10?'🏁 Bitwa ukończona':'✅ Runda '+room.round+' ukończona')+'</h2><button class="primary" onclick="nextLeagueBattleRound()">'+(room.round===10?'Nowa bitwa · 10 rund':'Następna runda · '+(room.round+1)+'/10')+' →</button></div>';
-  node.innerHTML='<div class="arena-connection" role="status"><span>'+connectionText()+'</span><button type="button" class="secondary" onclick="reconnectLeagueBattle()" '+(room.transportReady&&room.connected?'hidden':'')+'>Połącz ponownie</button></div><header class="arena-room-header"><b>⚔️ '+A.esc(A.configs[room.league].name)+' · '+room.round+'/10<br><small>'+A.esc(({part1:room.league==='ortho'?'Ortografia':'Nieregularne · część 1',part2:'Nieregularne · część 2',all:'Nieregularne · obie części',tenses:'Czasy angielskie','lesson-20261019':'Słówka · 19.10.2026',everyday:'Poznajmy się'})[room.topic]||'')+'</small></b><div class="arena-room-actions"><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+room.league+'\')">👥 Zaproś</button><button class="secondary" onclick="leaveLeagueBattle()">Opuść pokój</button></div></header>'+content+liveScores();
-  if(room.draft?.length)node.querySelectorAll('.arena-answer').forEach((input,i)=>input.value=room.draft[i]||'');connectionUi();clearInterval(tickTimer);
+  node.innerHTML='<div class="arena-connection" role="status"><span>'+connectionText()+'</span><button type="button" class="secondary" onclick="reconnectLeagueBattle()" '+(room.transportReady&&room.connected?'hidden':'')+'>Połącz ponownie</button></div><header class="arena-room-header"><b>⚔️ '+A.esc(A.configs[room.league].name)+' · '+room.round+'/10<br><small>'+A.esc(({divisibility:'Cechy podzielności liczb',part1:room.league==='ortho'?'Ortografia':'Nieregularne · część 1',part2:'Nieregularne · część 2',all:'Nieregularne · obie części',tenses:'Czasy angielskie','lesson-20261019':'Słówka · 19.10.2026',everyday:'Poznajmy się'})[room.topic]||'')+'</small></b><div class="arena-room-actions"><button class="secondary arena-invite-button" onclick="openBattleInvitePicker(\''+room.league+'\')">👥 Zaproś</button><button class="secondary" onclick="leaveLeagueBattle()">Opuść pokój</button></div></header>'+content+liveScores();
+  if(room.draft?.length){node.querySelectorAll('.arena-answer').forEach((input,i)=>input.value=room.draft[i]||'');if(room.league==='math')node.querySelectorAll('.math-answers input').forEach(x=>x.checked=(room.draft[0]||'').split(' · ').includes(x.value));}connectionUi();clearInterval(tickTimer);
   if(room.phase==='question'){
    tick();tickTimer=setInterval(tick,250);
-   if(room.answered||!room.transportReady||Date.now()<(room.starts[uid()]||room.startAt)+offset())node.querySelectorAll('.arena-answer,.arena-choice,.arena-skip,button[type=submit]').forEach(x=>x.disabled=true);
+   if(room.answered||!room.transportReady||Date.now()<(room.starts[uid()]||room.startAt)+offset())node.querySelectorAll('.arena-answer,.arena-choice,.math-answers input,.arena-skip,button[type=submit]').forEach(x=>x.disabled=true);
    const match=room.match,round=room.round;
    setTimeout(()=>{if(room?.match===match&&room.round===round&&room.phase==='question'&&room.transportReady&&!room.answered&&room.roster.includes(uid())){
-    node.querySelectorAll('.arena-answer,.arena-choice,.arena-skip,button[type=submit]').forEach(x=>x.disabled=false);node.querySelector('.arena-answer')?.focus();
+    node.querySelectorAll('.arena-answer,.arena-choice,.math-answers input,.arena-skip,button[type=submit]').forEach(x=>x.disabled=false);node.querySelector('.arena-answer')?.focus();
     const key=match+':'+round+':'+uid();if(room.league==='ortho'&&lastSpoken!==key&&window.EduLearningPreferences?.automaticAudio()!==false){lastSpoken=key;readSentence();}
    }},Math.max(0,(room.starts[uid()]||room.startAt)+offset()-Date.now()));
   }
  }
  document.addEventListener('input',e=>{if(e.target.matches('.arena-answer')&&room){room.draft=[...root().querySelectorAll('.arena-answer')].map(x=>x.value);remember();}});
- document.addEventListener('submit',e=>{if(e.target.matches('.arena-form')){e.preventDefault();answer([...e.target.querySelectorAll('.arena-answer')].map(x=>x.value.trim()));}});
+ document.addEventListener('submit',e=>{if(e.target.matches('.arena-form')){e.preventDefault();if(room?.league==='math'&&!e.target.querySelector('.math-answer-value')?.value){e.target.querySelector('.arena-feedback').textContent='Zaznacz odpowiedź przed wysłaniem.';return;}answer([...e.target.querySelectorAll('.arena-answer')].map(x=>x.value.trim()));}});
  document.addEventListener('click',e=>{const x=e.target.closest('[data-arena-option]');if(x)answer([x.dataset.arenaOption]);const review=e.target.closest('[data-arena-review]');if(review&&room?.results[Number(review.dataset.arenaReview)]){room.reviewRound=Number(review.dataset.arenaReview);const chart=root()?.querySelector('.arena-race');if(chart)chart.outerHTML=liveScores();}});
  async function ensureRoom(key,topic){
   const target=topic||scope(key);if(key==='english'||key==='spanish'){if(document.body.dataset.activeLeague!==key||scope(key)!==target)window.selectLearningTopic?.(key,target);else window.ensureLearningTopic?.(key);}else if(document.body.dataset.activeLeague!==key)window.LeagueApp.open(key);const account=uid(),until=Date.now()+15000;while(!syncReady&&uid()===account&&Date.now()<until)await new Promise(r=>setTimeout(r,200));
   if(!syncReady||!account||uid()!==account)throw new Error('Poczekaj na zakończenie logowania i spróbuj ponownie.');
   if(document.body.dataset.activeLeague!==key)throw new Error('Nie udało się otworzyć wybranej ligi.');
-  if(key==='english'){window.showView('english');window.englishTab('battle');}else if(key==='spanish'){window.showView('spanish');window.spanishTab('battle');}else window.showView('ortho-battle');
+  if(key==='math'){window.mathTab('battle');}else if(key==='english'){window.showView('english');window.englishTab('battle');}else if(key==='spanish'){window.showView('spanish');window.spanishTab('battle');}else window.showView('ortho-battle');
   join(key);await new Promise((resolve,reject)=>{const end=Date.now()+20000;function check(){if(uid()!==account||!room){reject(new Error('Nie udało się wejść do pokoju.'));return;}if(room.connected){resolve();return;}if(Date.now()>end){reject(new Error('Połączenie trwa zbyt długo.'));return;}setTimeout(check,200);}check();});
  }
  window.addEventListener('ortoliga-auth-change',()=>{if(room&&room.owner!==uid()){const key=room.league;leave();lobby(key);}});

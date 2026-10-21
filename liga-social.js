@@ -51,7 +51,7 @@
  let picker=null,pickerLeague=null;
  function renderPicker(){
   if(!picker?.open)return;
-  const online=currentPresenceIds(),me=currentUser()?.id,field=pickerLeague==='ortho'?'ortho_xp':pickerLeague==='spanish'?'spanish_xp':'english_xp';
+  const online=currentPresenceIds(),me=currentUser()?.id,field=pickerLeague==='math'?'math_xp':pickerLeague==='ortho'?'ortho_xp':pickerLeague==='spanish'?'spanish_xp':'english_xp';
   const profiles=(typeof studentRoster!=='undefined'?studentRoster:[]).filter(p=>p.user_id!==me&&online.has(p.user_id)).sort((a,b)=>(Number(b[field])||0)-(Number(a[field])||0));
   const root=picker.querySelector('.battle-invite-people');
   root.innerHTML=profiles.length?profiles.map(p=>{const pending=inviteStates.get(pickerLeague+':'+p.user_id),disabled=pending&&pending.until>Date.now();return '<button class="battle-invite-person" type="button" data-invite-user="'+p.user_id+'" '+(disabled?'disabled':'')+'><i class="presence-dot online" aria-hidden="true"></i><span><b>'+escape(p.display_name)+'</b><small>'+Math.max(0,Number(p[field])||0).toLocaleString('pl-PL')+' '+window.LeagueApp.configs[pickerLeague].unit+'</small></span><em>'+(disabled?escape(pending.label):'Zaproś →')+'</em></button>';}).join(''):'<p>Nie ma teraz innych aktywnych użytkowników. Lista odświeża się automatycznie.</p>';
@@ -121,7 +121,7 @@
  }
  function localRows(key){
   if(key==='english')return (data.englishLeague?.scoreEvents||[]).map(e=>({points:e.delta,kind:e.kind||'answer',occurred_at:e.at}));
-  const events=(data[key==='ortho'?'orthoBattle':'spanishLeague']?.events||[]).map(e=>({points:e.delta,kind:e.kind,occurred_at:e.at}));
+  const events=(data[key==='ortho'?'orthoBattle':key==='math'?'mathLeague':'spanishLeague']?.events||[]).map(e=>({points:e.delta,kind:e.kind,occurred_at:e.at}));
   if(key==='ortho')events.push(...(data.sessions||[]).map(s=>({points:Math.max(0,Math.min(100,Math.round(Number(s.score)||0))),kind:'dictation',occurred_at:s.createdAt,earned_date:s.date})));
   return events;
  }
